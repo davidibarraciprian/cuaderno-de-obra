@@ -1,0 +1,2994 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuaderno de Obra — NUEVO</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f1eb;
+    --sidebar-bg: #1a1f2e;
+    --sidebar-text: #c8d0e0;
+    --sidebar-accent: #e8a838;
+    --card-bg: #ffffff;
+    --border: #ddd8cc;
+    --text: #2a2a2a;
+    --text-muted: #888;
+    --accent: #c4611f;
+    --accent-light: #f5e6d8;
+    --green: #3a8c5c;
+    --green-light: #d8f0e4;
+    --blue: #2a6496;
+    --blue-light: #d8eaf5;
+    --red: #c0392b;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --sidebar-w: 300px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; overflow-x: hidden; }
+
+  /* SIDEBAR */
+  #sidebar { width: var(--sidebar-w); min-height: 100vh; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; transition: transform 0.3s ease; overflow: hidden; }
+  body.sidebar-collapsed #sidebar { transform: translateX(-300px); }
+  body.sidebar-collapsed #main { margin-left: 0; }
+  body.sidebar-collapsed #toggle-btn { left: 12px; }
+
+  .sidebar-header { padding: 20px 18px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-title { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--sidebar-accent); letter-spacing: 0.5px; }
+  .sidebar-obra { font-size: 10px; color: rgba(200,208,224,0.45); margin-top: 4px; line-height: 1.4; }
+
+  .sidebar-search { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .sidebar-search input { width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 7px 10px; color: #fff; font-size: 12px; font-family: inherit; outline: none; }
+  .sidebar-search input::placeholder { color: rgba(200,208,224,0.4); }
+  .sidebar-search input:focus { border-color: var(--sidebar-accent); }
+
+  .sidebar-stats { padding: 10px 14px; display: flex; gap: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .stat-pill { flex: 1; background: rgba(255,255,255,0.05); border-radius: 6px; padding: 7px 4px; text-align: center; }
+  .stat-pill .num { font-size: 18px; font-weight: 600; color: var(--sidebar-accent); line-height: 1; }
+  .stat-pill .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(200,208,224,0.5); margin-top: 2px; }
+
+  .sidebar-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+  .sidebar-list::-webkit-scrollbar { width: 3px; }
+  .sidebar-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+  .sidebar-item { padding: 9px 14px; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; position: relative; }
+  .sidebar-item:hover { background: rgba(255,255,255,0.05); border-left-color: rgba(232,168,56,0.4); }
+  .sidebar-item.active { background: rgba(232,168,56,0.1); border-left-color: var(--sidebar-accent); }
+  .sidebar-item .s-num { font-size: 10px; font-weight: 600; color: var(--sidebar-accent); }
+  .sidebar-item .s-date { font-size: 11px; color: rgba(200,208,224,0.9); margin: 1px 0; }
+  .sidebar-item .s-preview { font-size: 10px; color: rgba(200,208,224,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+  .sidebar-item .s-badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 8px; padding: 2px 5px; border-radius: 10px; font-weight: 600; text-transform: uppercase; }
+  .badge-normal { background: rgba(58,140,92,0.2); color: #6dcfa0; }
+  .badge-alerta { background: rgba(192,57,43,0.2); color: #e88; }
+  .badge-info { background: rgba(42,100,150,0.2); color: #7bb3d6; }
+  .sidebar-empty { padding: 28px 14px; text-align: center; color: rgba(200,208,224,0.3); font-size: 12px; }
+
+  /* TOGGLE */
+  #toggle-btn { position: fixed; top: 18px; left: calc(var(--sidebar-w) + 10px); z-index: 200; background: var(--sidebar-bg); color: var(--sidebar-accent); border: none; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: left 0.3s ease; box-shadow: var(--shadow); }
+
+  /* MAIN */
+  #main { margin-left: var(--sidebar-w); flex: 1; padding: 28px 32px; transition: margin-left 0.3s ease; min-width: 0; }
+
+  /* HEADER */
+  .app-header { margin-bottom: 20px; }
+  .obra-banner { background: var(--sidebar-bg); color: #fff; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; }
+  .obra-banner .entidad { font-size: 11px; color: var(--sidebar-accent); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .obra-banner .obra-nombre { font-family: 'DM Serif Display', serif; font-size: 15px; color: #fff; line-height: 1.4; }
+  .obra-banner .obra-meta { display: flex; gap: 20px; margin-top: 10px; flex-wrap: wrap; }
+  .obra-banner .obra-meta span { font-size: 11px; color: rgba(200,208,224,0.6); }
+  .obra-banner .obra-meta strong { color: var(--sidebar-accent); }
+
+  .header-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .app-title { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--accent); }
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #a54f17; }
+  .btn-success { background: var(--green); color: #fff; }
+  .btn-success:hover { background: #2d7048; }
+  .btn-outline { background: var(--card-bg); color: var(--text); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-drive { background: #4285f4; color: #fff; }
+  .btn-drive:hover { background: #3367d6; }
+  .btn-drive.connected { background: var(--green); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* STATUS BAR */
+  .status-bar { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-offline { background: #bbb; }
+  .dot-online { background: var(--green); box-shadow: 0 0 0 3px var(--green-light); }
+  .dot-syncing { background: #f0a030; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .status-text { font-size: 12px; color: var(--text-muted); flex: 1; }
+  .status-text strong { color: var(--text); }
+
+  /* CARD */
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-bottom: 20px; box-shadow: var(--shadow); }
+  .card-title { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--accent); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  /* SECTION TABS */
+  .section-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab-btn { padding: 6px 13px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--bg); color: var(--text-muted); transition: all 0.15s; }
+  .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tab-section { display: none; }
+  .tab-section.active { display: block; }
+
+  /* SECTION STYLES */
+  .section-label { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid var(--accent-light); }
+  .section-hint { font-size: 11px; color: var(--text-muted); font-style: italic; margin-bottom: 12px; line-height: 1.5; background: #fdf8f3; border-left: 3px solid var(--accent-light); padding: 8px 12px; border-radius: 0 6px 6px 0; }
+
+  /* PERSONAL TABLE */
+  .personal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .personal-col { }
+  .personal-col h4 { font-size: 11px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .personal-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .personal-row label { font-size: 12px; color: var(--text); flex: 1; min-width: 130px; }
+  .personal-row input[type="number"] { width: 55px; padding: 5px 8px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; text-align: center; }
+  .personal-total { background: var(--accent-light); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-weight: 600; }
+  .personal-total span { font-size: 13px; color: var(--accent); }
+
+  /* ALMACEN */
+  .almacen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .almacen-block { }
+  .almacen-block .block-title { font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 6px; margin-bottom: 10px; }
+  .block-ingreso { background: var(--green-light); color: var(--green); }
+  .block-salida { background: #fde8e8; color: var(--red); }
+  .movimiento-item { display: grid; grid-template-columns: 1fr 60px 70px 28px; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .movimiento-item input, .movimiento-item select { padding: 6px 8px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 12px; font-family: inherit; }
+  .btn-add-row { font-size: 11px; color: var(--accent); background: none; border: 1.5px dashed var(--accent-light); border-radius: 6px; padding: 5px 10px; cursor: pointer; width: 100%; margin-top: 4px; }
+  .btn-add-row:hover { background: var(--accent-light); }
+  .btn-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 4px; }
+  .btn-del:hover { color: var(--red); background: #fde8e8; }
+
+  /* EQUIPO */
+  .equipo-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+  .equipo-header span { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .equipo-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .equipo-row input, .equipo-row select { padding: 6px 8px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 12px; font-family: inherit; width: 100%; }
+
+  /* ACTIVIDADES */
+  .actividad-box { margin-bottom: 12px; }
+  .actividad-box textarea { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 7px; font-family: inherit; font-size: 13px; resize: vertical; min-height: 80px; line-height: 1.5; }
+  .actividad-box textarea:focus { border-color: var(--accent); outline: none; }
+
+
+  /* METRADOS GRUPOS */
+  .met-grupo { margin-bottom: 18px; }
+  .met-grupo-header { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 8px 8px 0 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; }
+  .met-grupo-programadas { background: #e8f4ff; color: #2a6496; border-left: 4px solid #2a6496; }
+  .met-grupo-mayores     { background: #fff3cd; color: #856404; border-left: 4px solid #f0a030; }
+  .met-grupo-nuevas      { background: #fde8e8; color: #c0392b; border-left: 4px solid #c0392b; }
+  .met-grupo table { border-radius: 0 0 8px 8px; overflow: hidden; border: 1px solid var(--border); border-top: none; }
+  .met-grupo .btn-add-row { border-radius: 0 0 8px 8px; border-top: 1px dashed var(--border); margin-top: 0; }
+  /* METRADOS TABLE */
+  .metrado-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  .metrado-table th { background: var(--sidebar-bg); color: var(--sidebar-text); padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; }
+  .metrado-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+  .metrado-table tbody tr:hover { background: #fdf8f2; }
+  .metrado-table input { border: 1px solid var(--border); border-radius: 4px; padding: 4px 7px; font-size: 12px; font-family: inherit; width: 100%; }
+  .metrado-table input:focus { border-color: var(--accent); outline: none; }
+  .td-item { font-weight: 700; color: var(--accent); width: 60px; }
+
+  /* OBSERVACIONES */
+  .obs-item { margin-bottom: 12px; position: relative; }
+  .obs-item textarea { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 7px; font-family: inherit; font-size: 13px; resize: vertical; min-height: 70px; line-height: 1.5; }
+  .obs-item textarea:focus { border-color: var(--accent); outline: none; }
+  .obs-tag { font-size: 10px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+
+  /* FORM BASICS */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  input[type="text"], input[type="date"], select, textarea { font-family: inherit; font-size: 13px; padding: 8px 11px; border: 1.5px solid var(--border); border-radius: 7px; color: var(--text); background: #fafaf8; outline: none; transition: border-color 0.2s; }
+  input[type="text"]:focus, input[type="date"]:focus, select:focus, textarea:focus { border-color: var(--accent); background: #fff; }
+  textarea { resize: vertical; line-height: 1.5; }
+
+  .form-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+  /* TABLE */
+  .table-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .table-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text); }
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--sidebar-bg); color: var(--sidebar-text); }
+  th { padding: 10px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  tbody tr:hover { background: #fdf8f2; }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 10px 12px; vertical-align: middle; }
+  .td-num { font-weight: 700; color: var(--accent); font-size: 12px; }
+  .td-date { color: var(--text-muted); white-space: nowrap; }
+  .td-desc { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-orange { background: #fff0d8; color: #c07030; }
+  .badge-red { background: #fde8e8; color: var(--red); }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; opacity: 0.4; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--card-bg); border-radius: 14px; padding: 24px; max-width: 680px; width: 100%; max-height: 90vh; overflow-y: auto; transform: translateY(20px); transition: transform 0.2s; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .modal-title { font-family: 'DM Serif Display', serif; font-size: 19px; color: var(--accent); }
+  .modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted); padding: 3px 7px; border-radius: 4px; }
+  .modal-close:hover { background: var(--bg); }
+  .detail-row { display: flex; gap: 10px; margin-bottom: 9px; font-size: 13px; }
+  .detail-label { font-weight: 600; color: var(--text-muted); min-width: 100px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; padding-top: 1px; }
+  .detail-val { color: var(--text); line-height: 1.5; flex: 1; white-space: pre-wrap; }
+
+  /* TOAST */
+  #toast { position: fixed; bottom: 20px; right: 20px; background: var(--sidebar-bg); color: #fff; padding: 11px 18px; border-radius: 8px; font-size: 13px; z-index: 999; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; max-width: 300px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); border-left: 4px solid var(--sidebar-accent); }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.error { border-left-color: #e55; }
+  #toast.success { border-left-color: var(--green); }
+
+  @media (max-width: 768px) {
+    #main { margin-left: 0; padding: 18px 14px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+    #toggle-btn { left: 12px !important; }
+    .personal-grid, .almacen-grid { grid-template-columns: 1fr; }
+    .equipo-row, .equipo-header { grid-template-columns: 1fr 1fr 1fr; }
+    .equipo-row select:last-child, .equipo-header span:last-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+
+<button id="toggle-btn" onclick="toggleSidebar()" title="Mostrar/Ocultar">☰</button>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">📋 Registro de Asientos</div>
+    <div class="sidebar-obra">MEJORAMIENTO Y AMPLIACIÓN DEL SERVICIO DE AGUA POTABLE Y ALCANTARILLADO — APV RETAMALES, NUEVA ESPERANZA, LA COLINA Y VILLA REAL — SAYLLA, CUSCO</div>
+  </div>
+  <div class="sidebar-search">
+    <input type="text" id="sb-search" placeholder="Buscar asientos…" oninput="filterSidebar()" />
+  </div>
+  <div class="sidebar-search" style="padding-top:0;">
+    <select id="sb-month" onchange="filterSidebar();updateSbMonthColor(this)" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:7px 10px;color:rgba(200,208,224,0.5);font-size:12px;font-family:inherit;outline:none;">
+      <option value="" style="color:#333;background:#fff;">— Todos los meses —</option>
+    </select>
+  </div>
+  <div class="sidebar-stats">
+    <div class="stat-pill"><div class="num" id="sb-total">0</div><div class="lbl">Total</div></div>
+    <div class="stat-pill"><div class="num" id="sb-week">0</div><div class="lbl">Semana</div></div>
+    <div class="stat-pill"><div class="num" id="sb-alertas">0</div><div class="lbl">Alertas</div></div>
+  </div>
+  <div id="sb-exported-pill" style="padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.06);display:none;">
+    <div style="background:rgba(196,97,31,0.15);border:1px solid rgba(196,97,31,0.3);border-radius:8px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.8px;color:rgba(200,208,224,0.5);margin-bottom:2px;">Último export Word</div>
+        <div style="font-size:11px;color:rgba(200,208,224,0.85);"><span id="sb-exported" style="font-size:18px;font-weight:700;color:#e8a838;">0</span> asientos exportados</div>
+      </div>
+      <div style="font-size:20px;opacity:0.6;">📄</div>
+    </div>
+  </div>
+  <div class="sidebar-list" id="sb-list">
+    <div class="sidebar-empty">Sin asientos registrados</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- OBRA BANNER -->
+  <div class="obra-banner">
+    <div class="entidad">📍 Oficina de Coordinación, Supervisión e Inspección de Obras</div>
+    <div class="obra-nombre">"MEJORAMIENTO Y AMPLIACIÓN DEL SERVICIO DE AGUA POTABLE URBANO Y SISTEMA DE ALCANTARILLADO EN APV RETAMALES, NUEVA ESPERANZA, LA COLINA Y VILLA REAL, DISTRITO DE SAYLLA DE LA PROVINCIA DE CUSCO DEL DEPARTAMENTO DE CUSCO."</div>
+    <div class="obra-meta">
+      <span>Provincia: <strong>Cusco</strong></span>
+      <span>Distrito: <strong>Saylla</strong></span>
+      <span>Departamento: <strong>Cusco</strong></span>
+    </div>
+  </div>
+
+  <!-- HEADER ROW -->
+  <div class="header-row" style="margin-bottom:16px;">
+    <div class="app-title">Cuaderno de Obra</div>
+    <div class="header-actions">
+      <div id="user-badge" style="display:flex;align-items:center;gap:8px;background:var(--sidebar-bg);padding:6px 12px;border-radius:8px;"></div>
+      <button class="btn" id="admin-btn" onclick="showUserManager()" style="background:#2a3550;color:#e8a838;display:none;">
+        👥 Usuarios
+      </button>
+      <button class="btn btn-drive" id="drive-btn" onclick="toggleDrive()">
+        <svg width="14" height="14" viewBox="0 0 87.3 78" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28.95 51.5H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L28.45 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 46.5C.4 47.9 0 49.45 0 51.5h28.95z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L87.3 55c.8-1.4 1.2-2.95 1.2-4.5H59.55l6.2 11.9z" fill="#ea4335"/><path d="M43.65 25L58.85 0H29.55L14.35 25z" fill="#00832d"/><path d="M59.55 51.5H87.3L72.1 25H43.15z" fill="#2684fc"/><path d="M43.65 25l-15.2 26.5H59.55L43.65 25z" fill="#ffba00"/></svg>
+        Conectar Drive
+      </button>
+      <button class="btn btn-outline" onclick="importarJSON()" title="Importar base de datos desde archivo JSON exportado anteriormente">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Importar JSON
+      </button>
+      <button class="btn btn-outline" onclick="exportarJSON()" title="Exportar toda la base de datos como JSON (backup)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Backup JSON
+      </button>
+      <button class="btn btn-outline" onclick="exportWord()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Exportar Word
+      </button>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-dot dot-offline" id="status-dot"></div>
+    <div class="status-text" id="status-text"><strong>Modo local</strong> — Conecta Google Drive para guardar automáticamente en la nube.</div>
+    <button class="btn btn-sm btn-outline" onclick="syncNow()" id="sync-btn" style="display:none;">↻ Sincronizar</button>
+    <button class="btn btn-sm" onclick="forceUploadAll()" id="force-btn" style="display:none;background:#e67e22;color:#fff;border:none;font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:600;">⬆ Forzar subida</button>
+  </div>
+
+  <!-- FORM -->
+  <div class="card">
+    <div class="card-title">✏️ <span id="form-title">Nuevo Asiento</span></div>
+
+    <!-- BASIC INFO -->
+    <div class="form-grid" style="margin-bottom:16px;">
+      <div class="form-group">
+        <label>N° de Asiento</label>
+        <input type="text" id="f-num" placeholder="Ej. 139" />
+      </div>
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="f-fecha" />
+      </div>
+      <div class="form-group">
+        <label>Tipo de Asiento</label>
+        <select id="f-tipo">
+          <option value="Normal">Normal</option>
+          <option value="Alerta">Alerta / Observación</option>
+          <option value="Informativo">Informativo</option>
+          <option value="Orden">Orden de Trabajo</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Identificación / Responsable</label>
+        <select id="f-resp">
+          <option value="DEL RESIDENTE DE OBRA">DEL RESIDENTE DE OBRA</option>
+          <option value="DEL SUPERVISOR DE OBRA">DEL SUPERVISOR DE OBRA</option>
+          <option value="DEL INSPECTOR DE OBRA">DEL INSPECTOR DE OBRA</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SECTION TABS -->
+    <div class="section-tabs">
+      <button class="tab-btn active" onclick="showTab('personal')">1. Personal</button>
+      <button class="tab-btn" onclick="showTab('almacen')">2. Almacén</button>
+      <button class="tab-btn" onclick="showTab('equipo')">3. Equipo Mecánico</button>
+      <button class="tab-btn" onclick="showTab('actividades')">4. Actividades</button>
+      <button class="tab-btn" onclick="showTab('observaciones')">5. Observaciones</button>
+    </div>
+
+    <!-- TAB: PERSONAL -->
+    <div class="tab-section active" id="tab-personal">
+      <div class="section-hint">Se debe registrar de forma detallada el personal con su categoría y cantidad. El total debe coincidir con la planilla mensual y el tareo para el pago. Desagregar en ítem aparte cuando corresponda al aporte de beneficiarios.</div>
+      <div class="personal-grid">
+        <div class="personal-col">
+          <h4>👷 Personal Técnico / Administrativo</h4>
+          <div class="personal-row"><label>Residente de Obra</label><input type="number" min="0" id="p-residente" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Inspector de Obra</label><input type="number" min="0" id="p-inspector" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Responsable de SSOMA</label><input type="number" min="0" id="p-ssoma" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Asistente Técnico de Obra</label><input type="number" min="0" id="p-ast" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Asistente Técnico de Inspector</label><input type="number" min="0" id="p-asti" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Administrador de Obra</label><input type="number" min="0" id="p-aadm" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Almacenero</label><input type="number" min="0" id="p-almacenero" value="0" oninput="calcTotal()"></div>
+        </div>
+        <div class="personal-col">
+          <h4>🔨 Personal de Obra</h4>
+          <div class="personal-row"><label>Capataz</label><input type="number" min="0" id="p-capataz" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Guardián</label><input type="number" min="0" id="p-guardian" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Operarios</label><input type="number" min="0" id="p-operarios" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Oficiales</label><input type="number" min="0" id="p-oficiales" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Peones</label><input type="number" min="0" id="p-peones" value="0" oninput="calcTotal()"></div>
+          <div class="personal-row"><label>Operador de Equipo</label><input type="number" min="0" id="p-opequipo" value="0" oninput="calcTotal()"></div>
+        </div>
+      </div>
+      <div class="personal-total">
+        <span>TOTAL PERSONAL DIARIO:</span>
+        <span id="total-personal" style="font-size:20px;">0</span>
+      </div>
+    </div>
+
+    <!-- TAB: ALMACEN -->
+    <div class="tab-section" id="tab-almacen">
+      <div class="section-hint">Registrar detalladamente los ingresos y salidas de bienes de obra (materiales, herramientas, vestuario, mobiliario, equipos de cómputo y otros). Indicar procedencia si fueron recibidos por transferencia, convenio o aporte de beneficiarios. Debe concordar con tarjetas Vin Card, reportes de movimiento de almacén, notas de entrada y salida.</div>
+      <div class="almacen-grid">
+        <div class="almacen-block">
+          <div class="block-title block-ingreso">⬇ INGRESO</div>
+          <div id="ingresos-list"></div>
+          <button class="btn-add-row" onclick="addMovRow('ingresos')">+ Agregar ingreso</button>
+        </div>
+        <div class="almacen-block">
+          <div class="block-title block-salida">⬆ SALIDA</div>
+          <div id="salidas-list"></div>
+          <button class="btn-add-row" onclick="addMovRow('salidas')">+ Agregar salida</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: EQUIPO -->
+    <div class="tab-section" id="tab-equipo">
+      <div class="section-hint">Registrar detalladamente la maquinaria utilizada en obra diariamente: cantidad de combustible entregada, horas efectivas trabajadas y modalidad de uso (alquiler, convenio, aporte de beneficiarios, propiedad M.D.S., propiedad de la obra). Debe concordar con reportes de control de maquinaria del informe mensual y partes diarios.</div>
+      <div class="equipo-header">
+        <span>Equipo / Maquinaria</span>
+        <span>H.M.</span>
+        <span>Combustible (gal)</span>
+        <span>Modalidad</span>
+        <span></span>
+      </div>
+      <div id="equipo-list"></div>
+      <button class="btn-add-row" onclick="addEquipoRow()">+ Agregar equipo</button>
+    </div>
+
+    <!-- TAB: ACTIVIDADES -->
+    <div class="tab-section" id="tab-actividades">
+      <div class="section-label">Descripción de Actividades del Día</div>
+      <div id="actividades-list"></div>
+      <button class="btn-add-row" onclick="addActividadRow()">+ Agregar actividad</button>
+
+      <div style="margin-top:20px;">
+        <div class="section-label">Metrados Ejecutados</div>
+        <div class="section-hint" style="margin-bottom:14px;">Registra las partidas ejecutadas diferenciando su tipo. <strong>Solo se exporta al Word lo que tenga contenido.</strong> Al final de cada mes, transcribir en un asiento el total mensual.</div>
+
+        <!-- GRUPO 1: PARTIDAS PROGRAMADAS -->
+        <div class="met-grupo">
+          <div class="met-grupo-header met-grupo-programadas">
+            📋 Partidas Programadas
+            <span style="font-weight:400;font-size:10px;opacity:0.8;">— Partidas del expediente técnico ejecutadas según cronograma</span>
+          </div>
+          <table class="metrado-table">
+            <thead><tr>
+              <th>Ítem / Descripción de Partida</th>
+              <th style="width:80px;">Metrado</th>
+              <th style="width:70px;">Unidad</th>
+              <th style="width:32px;"></th>
+            </tr></thead>
+            <tbody id="metrados-programadas"></tbody>
+          </table>
+          <button class="btn-add-row" onclick="addMetradoRowTo('programadas')">+ Agregar partida programada</button>
+        </div>
+
+        <!-- GRUPO 2: MAYORES METRADOS -->
+        <div class="met-grupo">
+          <div class="met-grupo-header met-grupo-mayores">
+            📈 Mayores Metrados
+            <span style="font-weight:400;font-size:10px;opacity:0.8;">— Partidas del expediente con metrado superior al programado</span>
+          </div>
+          <table class="metrado-table">
+            <thead><tr>
+              <th>Ítem / Descripción de Partida</th>
+              <th style="width:80px;">Metrado</th>
+              <th style="width:70px;">Unidad</th>
+              <th style="width:32px;"></th>
+            </tr></thead>
+            <tbody id="metrados-mayores"></tbody>
+          </table>
+          <button class="btn-add-row" onclick="addMetradoRowTo('mayores')">+ Agregar mayor metrado</button>
+        </div>
+
+        <!-- GRUPO 3: PARTIDAS NUEVAS -->
+        <div class="met-grupo">
+          <div class="met-grupo-header met-grupo-nuevas">
+            🆕 Partidas Nuevas / Adicionales
+            <span style="font-weight:400;font-size:10px;opacity:0.8;">— Partidas no contempladas en el expediente técnico original</span>
+          </div>
+          <table class="metrado-table">
+            <thead><tr>
+              <th>Ítem / Descripción de Partida</th>
+              <th style="width:80px;">Metrado</th>
+              <th style="width:70px;">Unidad</th>
+              <th style="width:32px;"></th>
+            </tr></thead>
+            <tbody id="metrados-nuevas"></tbody>
+          </table>
+          <button class="btn-add-row" onclick="addMetradoRowTo('nuevas')">+ Agregar partida nueva</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: OBSERVACIONES -->
+    <div class="tab-section" id="tab-observaciones">
+      <div class="section-label">Observaciones Generales</div>
+      <div id="obs-list"></div>
+      <button class="btn-add-row" onclick="addObsRow()">+ Agregar observación</button>
+
+      <div style="margin-top:16px;">
+        <div class="section-label">Al Supervisor</div>
+        <textarea id="f-al-supervisor" placeholder="Comunicaciones o instrucciones dirigidas al Supervisor de Obra…" style="width:100%;min-height:80px;"></textarea>
+      </div>
+    </div>
+
+    <div class="form-footer">
+      <button class="btn btn-outline" onclick="copyLastAsiento()" id="btn-copy-last" title="Copia los datos del último asiento guardado al formulario actual">📋 Copiar último asiento</button>
+      <button class="btn btn-outline" onclick="clearForm()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAsiento()">💾 Guardar Asiento</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card" style="padding-bottom:8px;">
+    <div class="table-header">
+      <div class="table-title">Registro de Asientos</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="tbl-search" placeholder="Buscar…" style="width:160px;" oninput="renderTable()" />
+        <select id="tbl-month" onchange="renderTable()" style="font-size:12px;">
+          <option value="">Todos los meses</option>
+        </select>
+        <select id="tbl-filter" onchange="renderTable()" style="font-size:12px;">
+          <option value="">Todos</option>
+          <option value="Normal">Normal</option>
+          <option value="Alerta">Alerta</option>
+          <option value="Informativo">Informativo</option>
+          <option value="Orden">Orden</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Responsable</th>
+            <th>Actividades</th>
+            <th style="text-align:center;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body">
+          <tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📖</div><p>No hay asientos registrados aún.</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Asiento</div>
+      <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end;">
+      <button class="btn btn-outline btn-sm" onclick="editFromModal()">✏️ Editar</button>
+      <button class="btn btn-sm" style="background:#fde8e8;color:var(--red);border:none;" onclick="deleteFromModal()">🗑 Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════
+//  STATE
+// ════════════════════════════
+let asientos = [];
+let driveConnected = false;
+let driveFileId = null;
+let currentModalId = null;
+let editingId = null;
+let driveToken = null;
+
+const STORAGE_KEY = 'cuaderno_obra_saylla_v2';
+const FILE_NAME = 'cuaderno-obra-saylla.json';
+
+// ════════════════════════════
+//  CONFIGURACIÓN — EDITA SOLO ESTA LÍNEA
+// ════════════════════════════
+// Pega aquí tu URL de Google Apps Script y ya no la cambies más.
+// Todos los datos (asientos, usuarios, contraseñas) vivirán en Google Sheets.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykDV_KWK9Yyf5L45vSI3cLqq03aXCHmUiiWT5qsjmLbP3fX0X3a1ByfnRtAONz-HhZ/exec';
+
+let currentUser = null; // { username, role: 'admin'|'editor'|'viewer', displayName }
+// Usuarios cargados desde Sheets. Nunca se leen del HTML.
+let allUsers = {};
+
+// ════════════════════════════
+//  INIT
+// ════════════════════════════
+window.onload = async () => {
+  // Siempre cargar usuarios desde Sheets primero (fuente de verdad)
+  await loadUsersFromSheets();
+
+  // Restaurar sesión guardada — pero revalidar que el usuario sigue existiendo
+  const savedSession = localStorage.getItem('cuaderno_session');
+  if (savedSession) {
+    try {
+      const s = JSON.parse(savedSession);
+      // Verificar que el usuario todavía existe en Sheets con la misma contraseña
+      if (allUsers[s.username]) {
+        currentUser = { username: s.username, role: allUsers[s.username].role, displayName: allUsers[s.username].displayName };
+        startApp();
+        return;
+      }
+    } catch(e) {}
+  }
+  showLoginModal();
+};
+
+// ════════════════════════════
+//  LOGIN / AUTH
+// ════════════════════════════
+function showLoginModal() {
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('toggle-btn').style.display = 'none';
+
+  const existing = document.getElementById('login-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'login-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:linear-gradient(135deg,#1a1f2e 0%,#2a3550 100%);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+  <div style="background:#fff;border-radius:20px;padding:36px 32px;max-width:400px;width:100%;box-shadow:0 40px 100px rgba(0,0,0,0.5);font-family:'DM Sans',sans-serif;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:36px;margin-bottom:8px;">📋</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:22px;color:#c4611f;margin-bottom:4px;">Cuaderno de Obra</div>
+      <div style="font-size:11px;color:#aaa;line-height:1.5;">APV Retamales — Saylla, Cusco</div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Usuario</label>
+      <input id="login-user" type="text" placeholder="Ej: admin, editor1…" autocomplete="username"
+        style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:9px;font-size:14px;font-family:inherit;outline:none;transition:border 0.2s;"
+        onfocus="this.style.borderColor='#c4611f'" onblur="this.style.borderColor='#ddd'"
+        onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()" />
+    </div>
+    <div style="margin-bottom:8px;">
+      <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Contraseña</label>
+      <div style="position:relative;">
+        <input id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password"
+          style="width:100%;padding:11px 44px 11px 14px;border:1.5px solid #ddd;border-radius:9px;font-size:14px;font-family:inherit;outline:none;transition:border 0.2s;"
+          onfocus="this.style.borderColor='#c4611f'" onblur="this.style.borderColor='#ddd'"
+          onkeydown="if(event.key==='Enter')doLogin()" />
+        <button type="button" onclick="toggleLoginPass(this)"
+          style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:#aaa;font-size:16px;line-height:1;"
+          title="Mostrar/ocultar contraseña">👁</button>
+      </div>
+    </div>
+    <div id="login-error" style="display:none;background:#fde8e8;color:#c0392b;font-size:12px;padding:9px 12px;border-radius:7px;margin-bottom:12px;">Usuario o contraseña incorrectos.</div>
+    <button onclick="doLogin()" style="width:100%;padding:12px;background:#c4611f;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:background 0.15s;margin-top:4px;" onmouseover="this.style.background='#a54f17'" onmouseout="this.style.background='#c4611f'">
+      Ingresar →
+    </button>
+
+  </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('login-user').focus(), 100);
+}
+
+function toggleLoginPass(btn) {
+  const input = document.getElementById('login-pass');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+
+function doLogin() {
+  const username = document.getElementById('login-user').value.trim().toLowerCase();
+  const password = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+
+  // Buscar en allUsers (cargado desde Sheets o localStorage)
+  let found = null;
+  if (allUsers[username] && allUsers[username].password === password) {
+    found = { username, ...allUsers[username] };
+  }
+
+  if (!found) {
+    errEl.style.display = 'block';
+    document.getElementById('login-pass').value = '';
+    return;
+  }
+
+  currentUser = found;
+  localStorage.setItem('cuaderno_session', JSON.stringify(currentUser));
+  document.getElementById('login-overlay').remove();
+  startApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  localStorage.removeItem('cuaderno_session');
+  showLoginModal();
+}
+
+async function startApp() {
+  document.getElementById('main').style.display = '';
+  document.getElementById('sidebar').style.display = '';
+  document.getElementById('toggle-btn').style.display = '';
+
+  applyRoleUI();
+  updateUserBadge();
+  document.getElementById('f-fecha').valueAsDate = new Date();
+  initRows();
+
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+
+  // ── PASO 1: cargar localStorage inmediatamente (nunca queda vacío) ──
+  const localRaw = localStorage.getItem(STORAGE_KEY);
+  if (localRaw) {
+    try {
+      asientos = JSON.parse(localRaw);
+    } catch(e) { asientos = []; }
+  } else {
+    asientos = [];
+  }
+  renderTable();
+  renderSidebar();
+
+  // ── PASO 2: intentar sincronizar con Sheets si hay URL configurada ──
+  const tieneURL = APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
+  if (tieneURL) {
+    if (dot) dot.className = 'status-dot dot-syncing';
+    if (txt) txt.innerHTML = '<strong>Conectando con Google Sheets...</strong> Sincronizando datos.';
+    await loadFromSheets();
+  } else {
+    // Sin URL: mostrar datos locales directamente
+    if (dot) dot.className = asientos.length ? 'status-dot dot-online' : 'status-dot dot-offline';
+    if (txt) {
+      if (asientos.length) {
+        txt.innerHTML = `<strong>Modo local</strong> — ${asientos.length} asiento(s) cargados. Configura Google Sheets para sincronizar entre PCs.`;
+      } else {
+        txt.innerHTML = '<strong>Modo local</strong> — Sin asientos. Importa un JSON o crea nuevos asientos.';
+      }
+    }
+  }
+}
+
+function applyRoleUI() {
+  const isReadOnly = currentUser.role === 'viewer';
+  const isAdmin = currentUser.role === 'admin';
+
+  // Ocultar formulario a viewers
+  const formCard = document.querySelector('.card');
+  if (formCard) formCard.style.display = isReadOnly ? 'none' : '';
+
+  // Mostrar botón de admin solo al admin
+  const adminBtn = document.getElementById('admin-btn');
+  if (adminBtn) adminBtn.style.display = isAdmin ? '' : 'none';
+
+  // Quitar botones de editar/eliminar en tabla para viewers
+  if (isReadOnly) {
+    const style = document.createElement('style');
+    style.textContent = '.btn-edit-action, .btn-del-action { display: none !important; }';
+    document.head.appendChild(style);
+  }
+}
+
+function updateUserBadge() {
+  const badge = document.getElementById('user-badge');
+  if (!badge) return;
+  const roleLabel = { admin: '👑 Admin', editor: '✏️ Editor', viewer: '👁 Lector' };
+  badge.innerHTML = `
+    <span style="font-size:12px;font-weight:600;color:#fff;">${currentUser.displayName || currentUser.username}</span>
+    <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);">${roleLabel[currentUser.role]||currentUser.role}</span>
+    <button onclick="showChangeCredentials()" title="Cambiar contraseña" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);padding:3px 9px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">🔑</button>
+    <button onclick="doLogout()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);padding:3px 9px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Salir</button>
+  `;
+}
+
+// ════════════════════════════
+//  GESTIÓN DE USUARIOS (ADMIN)
+// ════════════════════════════
+function showUserManager() {
+  if (currentUser.role !== 'admin') { toast('Solo el administrador puede gestionar usuarios.', 'error'); return; }
+
+  const existing = document.getElementById('users-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'users-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:700;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+
+  const buildRows = () => {
+    const nonAdmin = Object.entries(allUsers).filter(([u]) => u !== 'admin');
+    if (!nonAdmin.length) return '<div style="color:#aaa;font-size:13px;padding:16px 0;">No hay usuarios adicionales aún.</div>';
+    return nonAdmin.map(([uname, u]) => `
+      <div style="display:grid;grid-template-columns:1fr 1fr 90px 80px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f0ede8;">
+        <span style="font-weight:600;font-size:13px;">${uname}</span>
+        <span style="font-size:12px;color:#888;">${{ admin:'👑 Admin', editor:'✏️ Editor', viewer:'👁 Lector' }[u.role]||u.role}</span>
+        <span style="font-size:11px;color:#bbb;">${u.displayName||''}</span>
+        <button onclick="deleteUser('${uname}')" style="padding:4px 10px;background:#fde8e8;color:#c0392b;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">Eliminar</button>
+      </div>
+    `).join('');
+  };
+
+  overlay.innerHTML = `
+  <div style="background:#fff;border-radius:18px;padding:28px;max-width:540px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,0.3);font-family:'DM Sans',sans-serif;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'DM Serif Display',serif;font-size:20px;color:#c4611f;">👥 Gestión de Usuarios</div>
+      <button onclick="document.getElementById('users-overlay').remove()" style="background:#f4f1eb;border:none;padding:6px 10px;border-radius:7px;cursor:pointer;font-size:14px;">✕</button>
+    </div>
+
+    <!-- Usuarios existentes -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">Usuarios activos</div>
+      <div style="background:#f4f1eb;border-radius:10px;padding:4px 14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 90px 80px;gap:8px;padding:8px 0;border-bottom:1px solid #e5e0d8;">
+          <span style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;">Usuario</span>
+          <span style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;">Rol</span>
+          <span style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;">Nombre</span>
+          <span></span>
+        </div>
+        <!-- Admin fijo -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 90px 80px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f0ede8;">
+          <span style="font-weight:600;font-size:13px;">admin</span>
+          <span style="font-size:12px;color:#c4611f;font-weight:700;">👑 Admin</span>
+          <span style="font-size:11px;color:#bbb;">Administrador</span>
+          <span style="font-size:11px;color:#ccc;">(fijo)</span>
+        </div>
+        <div id="user-rows">${buildRows()}</div>
+      </div>
+    </div>
+
+    <!-- Agregar nuevo usuario -->
+    <div style="background:#f8f5f0;border-radius:12px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:#c4611f;margin-bottom:12px;">➕ Agregar nuevo usuario</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Usuario (sin espacios)</label>
+          <input id="new-uname" type="text" placeholder="Ej: juan23" style="width:100%;padding:8px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit;outline:none;" />
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Contraseña</label>
+          <input id="new-pass" type="text" placeholder="Contraseña segura" style="width:100%;padding:8px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit;outline:none;" />
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Nombre para mostrar</label>
+          <input id="new-display" type="text" placeholder="Ej: Juan Pérez" style="width:100%;padding:8px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit;outline:none;" />
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Rol</label>
+          <select id="new-role" style="width:100%;padding:8px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit;outline:none;">
+            <option value="viewer">👁 Lector (solo lectura)</option>
+            <option value="editor">✏️ Editor (puede modificar)</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="addUser()" style="width:100%;padding:10px;background:#3a8c5c;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">
+        ✅ Crear usuario
+      </button>
+    </div>
+
+    <!-- Instrucciones para compartir -->
+    <div style="margin-top:16px;background:#e8f4ff;border-radius:10px;padding:13px 15px;font-size:12px;color:#2a6496;line-height:1.7;">
+      💡 <strong>¿Cómo comparten el acceso?</strong><br>
+      Comparte el archivo <code>cuaderno-de-obra.html</code> por WhatsApp o correo, y dales el usuario y contraseña que creaste. Los lectores verán los datos en tiempo real (si tienes Google Sheets configurado).
+    </div>
+
+    <!-- Config GAS -->
+    <div style="margin-top:8px;">
+      <button onclick="document.getElementById('users-overlay').remove();showChangeCredentials();" style="width:100%;padding:9px;border:1.5px dashed #c4611f;background:none;color:#c4611f;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;">
+        🔑 Cambiar usuario / contraseña
+      </button>
+    </div>
+    <div style="margin-top:10px;background:#e8f5e9;border-radius:9px;padding:11px 13px;font-size:11px;color:#2d7048;line-height:1.7;">
+      ✅ <strong>Los usuarios se guardan en Google Sheets.</strong><br>
+      Al crear o eliminar un usuario, el cambio es inmediato en todas las computadoras.
+      Solo necesitas compartir el archivo HTML una vez.
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+async function addUser() {
+  const uname = document.getElementById('new-uname').value.trim().toLowerCase().replace(/\s+/g,'');
+  const pass = document.getElementById('new-pass').value.trim();
+  const display = document.getElementById('new-display').value.trim();
+  const role = document.getElementById('new-role').value;
+
+  if (!uname || !pass) { toast('Completa usuario y contraseña.', 'error'); return; }
+  if (allUsers[uname]) { toast('Ese usuario ya existe.', 'error'); return; }
+
+  allUsers[uname] = { password: pass, role, displayName: display || uname };
+  document.getElementById('user-rows').innerHTML = buildUserRows();
+  document.getElementById('new-uname').value = '';
+  document.getElementById('new-pass').value = '';
+  document.getElementById('new-display').value = '';
+  toast(`✅ Usuario "${uname}" creado como ${role}.`, 'success');
+
+  if (APPS_SCRIPT_URL) {
+    syncUsersToSheets().then(() => {
+      toast('✅ Usuario creado y sincronizado. Descargando archivo actualizado…', 'success');
+      // no-op;
+    });
+  }
+}
+
+function buildUserRows() {
+  const nonAdmin = Object.entries(allUsers).filter(([u]) => u !== 'admin');
+  if (!nonAdmin.length) return '<div style="color:#aaa;font-size:13px;padding:16px 0;">No hay usuarios adicionales aún.</div>';
+  return nonAdmin.map(([uname, u]) => `
+    <div style="display:grid;grid-template-columns:1fr 1fr 90px 80px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f0ede8;">
+      <span style="font-weight:600;font-size:13px;">${uname}</span>
+      <span style="font-size:12px;color:#888;">${{ admin:'👑 Admin', editor:'✏️ Editor', viewer:'👁 Lector' }[u.role]||u.role}</span>
+      <span style="font-size:11px;color:#bbb;">${u.displayName||''}</span>
+      <button onclick="deleteUser('${uname}')" style="padding:4px 10px;background:#fde8e8;color:#c0392b;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">Eliminar</button>
+    </div>
+  `).join('');
+}
+
+async function deleteUser(uname) {
+  if (!confirm(`¿Eliminar el usuario "${uname}"?`)) return;
+  delete allUsers[uname];
+  const el = document.getElementById('user-rows');
+  if (el) el.innerHTML = buildUserRows();
+  await syncUsersToSheets();
+  toast(`Usuario "${uname}" eliminado. Cambio visible en todas las PCs.`, 'success');
+}
+
+// ════════════════════════════
+//  GOOGLE SHEETS / APPS SCRIPT
+// ════════════════════════════
+// ══ COLA DE PENDIENTES OFFLINE ════════════════════════════════════════════
+const PENDING_KEY = 'cuaderno_obra_pending_sync';
+function markPending()  { localStorage.setItem(PENDING_KEY, '1'); }
+function clearPending() { localStorage.removeItem(PENDING_KEY); }
+function hasPending()   { return localStorage.getItem(PENDING_KEY) === '1'; }
+
+// Al recuperar internet → subir automáticamente lo que quedó pendiente
+window.addEventListener('online', async () => {
+  if (!hasPending()) return;
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  if (dot) dot.className = 'status-dot dot-syncing';
+  if (txt) txt.innerHTML = '<strong>Reconectado</strong> — Subiendo cambios pendientes...';
+  toast('🌐 Conexión restaurada. Subiendo cambios pendientes...', 'success');
+  const ok = await syncToSheets();
+  if (ok) { clearPending(); toast('✅ Cambios subidos. Datos al día en todas las PCs.', 'success'); }
+  else     { toast('⚠️ No se pudo subir. Se reintentará al guardar el próximo asiento.', 'error'); }
+});
+window.addEventListener('offline', () => {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  if (dot) dot.className = 'status-dot dot-offline';
+  if (txt) txt.innerHTML = '<strong>Sin internet</strong> — Los cambios se guardan localmente y se subirán al reconectarse.';
+});
+
+// syncToSheets: sube TODOS los asientos a Sheets. Retorna true si tuvo éxito.
+async function syncToSheets() {
+  if (!APPS_SCRIPT_URL) return false;
+  try {
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+    if (dot) dot.className = 'status-dot dot-syncing';
+    if (txt) txt.innerHTML = '<strong>Sincronizando...</strong> Subiendo datos a Google Sheets.';
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'write', data: asientos }),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    // ── VALIDACIÓN REAL: leer el cuerpo de la respuesta, no solo el status HTTP ──
+    // Apps Script casi siempre responde HTTP 200 aunque su lógica interna falle
+    // (timeout, error de rango, etc.), así que hay que revisar el JSON devuelto.
+    const raw = await resp.text();
+    let json = null;
+    try { json = JSON.parse(raw); } catch(parseErr) {
+      // La respuesta no es JSON → casi siempre es una página de error de Apps Script
+      throw new Error('Respuesta inesperada del servidor (no es JSON): ' + raw.slice(0, 200));
+    }
+    if (!json || json.ok === false) {
+      throw new Error((json && (json.error || json.message)) || 'El servidor reportó un fallo al guardar (ok:false)');
+    }
+
+    if (dot) dot.className = 'status-dot dot-online';
+    if (txt) txt.innerHTML = '<strong>Google Sheets conectado</strong> — Todos los usuarios ven los mismos datos.';
+    updateSheetsUI(true);
+    return true;
+  } catch(e) {
+    console.warn('syncToSheets error:', e);
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+    if (dot) dot.className = 'status-dot dot-offline';
+    if (txt) txt.innerHTML = '<strong>⚠️ Falló la subida a Sheets</strong> — ' + esc(e.message || String(e));
+    toast('⚠️ No se subió a Google Sheets: ' + (e.message || e), 'error');
+    return false;
+  }
+}
+
+async function loadFromSheets() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT') {
+    // Sin URL: usar localStorage como fuente de datos
+    const localRaw = localStorage.getItem(STORAGE_KEY);
+    if (localRaw) {
+      try { asientos = JSON.parse(localRaw); } catch(e) { asientos = []; }
+    }
+    renderTable();
+    renderSidebar();
+    updateSheetsUI(false);
+    return;
+  }
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=read', { cache: 'no-store' });
+    const json = await res.json();
+    if (json.ok && Array.isArray(json.data)) {
+      const fromSheets = json.data;
+
+      // ── CASO A: sin datos locales → Sheets es la fuente de verdad, usar directo ──
+      // (Esto ocurre en cualquier PC que abra el archivo por primera vez o sin cache)
+      if (asientos.length === 0) {
+        asientos = fromSheets.slice().sort((a, b) => {
+          const na = parseInt(a.num), nb = parseInt(b.num);
+          if (!isNaN(na) && !isNaN(nb)) return na - nb;
+          return (a.num||'').localeCompare(b.num||'');
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(asientos));
+        renderTable();
+        renderSidebar();
+        clearPending();
+        const msg = asientos.length > 0
+          ? '✅ ' + asientos.length + ' asiento(s) descargados desde Google Sheets.'
+          : '⚠️ Google Sheets está vacío o no responde correctamente.';
+        toast(msg, 'success');
+        updateSheetsUI(true);
+        return;
+      }
+
+      // ── CASO B: PC con datos locales → merge por num (clave de negocio) ──
+      // Gana el asiento con timestamp más reciente. En caso de empate, gana el LOCAL.
+      const byNum = new Map();
+      // Base: Sheets
+      fromSheets.forEach(a => {
+        byNum.set(a.num, a);
+      });
+      // Override: local (gana si es igual o más reciente)
+      asientos.forEach(a => {
+        if (byNum.has(a.num)) {
+          const sheetsTs = new Date(byNum.get(a.num).updated||0).getTime();
+          const localTs  = new Date(a.updated||0).getTime();
+          if (localTs >= sheetsTs) byNum.set(a.num, a); // local gana (incluye empate)
+        } else {
+          byNum.set(a.num, a); // existe solo en local → agregar
+        }
+      });
+
+      asientos = Array.from(byNum.values()).sort((a, b) => {
+        const na = parseInt(a.num), nb = parseInt(b.num);
+        if (!isNaN(na) && !isNaN(nb)) return na - nb;
+        return (a.num||'').localeCompare(b.num||'');
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(asientos));
+      renderTable();
+      renderSidebar();
+
+      // ¿El local tiene algo que Sheets no tiene o es más reciente?
+      const sheetsNums = new Set(fromSheets.map(x => x.num));
+      const sheetsByNum = new Map(fromSheets.map(x => [x.num, x]));
+      const needsSync = asientos.some(a => {
+        if (!sheetsNums.has(a.num)) return true; // solo en local
+        const s = sheetsByNum.get(a.num);
+        return new Date(a.updated||0).getTime() > new Date(s.updated||0).getTime();
+      });
+
+      if (needsSync) {
+        const soloLocal = asientos.filter(a => !sheetsNums.has(a.num)).length;
+        const msg = soloLocal > 0
+          ? `☁️ ${soloLocal} asiento(s) de esta PC no están en Sheets. Subiendo...`
+          : '☁️ Datos locales más recientes. Subiendo a Sheets...';
+        toast(msg, 'success');
+        const ok = await syncToSheets();
+        if (ok) clearPending();
+      } else {
+        clearPending();
+        toast('✅ ' + asientos.length + ' asiento(s) sincronizados.', 'success');
+      }
+    }
+    updateSheetsUI(true);
+  } catch(e) {
+    console.warn('loadFromSheets error:', e);
+    updateSheetsUI(false);
+    toast('No se pudo conectar a Google Sheets. Verifica tu conexión a internet.', 'error');
+  }
+}
+
+// ════════════════════════════
+//  SHEETS — FUENTE DE VERDAD ÚNICA
+// ════════════════════════════
+
+// Lee usuarios desde Sheets. Si Sheets está vacío, sube el admin por defecto.
+async function loadUsersFromSheets() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT') {
+    // Sin Sheets: usar solo admin por defecto
+    if (!allUsers.admin) allUsers = { admin: { password: 'admin1234', role: 'admin', displayName: 'Administrador' } };
+    return;
+  }
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=readUsers', { cache: 'no-store' });
+    const json = await res.json();
+    if (json.ok && json.data && Object.keys(json.data).length > 0) {
+      allUsers = json.data;
+    } else {
+      // Primera vez: subir admin por defecto a Sheets
+      if (!allUsers.admin) allUsers = { admin: { password: 'admin1234', role: 'admin', displayName: 'Administrador' } };
+      await syncUsersToSheets();
+    }
+  } catch(e) {
+    console.warn('loadUsersFromSheets error:', e);
+    if (!allUsers.admin) allUsers = { admin: { password: 'admin1234', role: 'admin', displayName: 'Administrador' } };
+  }
+}
+
+// Sube usuarios a Sheets
+async function syncUsersToSheets() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT') return;
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'writeUsers', data: allUsers }),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  } catch(e) { console.warn('syncUsersToSheets error:', e); }
+}
+
+// ════════════════════════════
+//  CAMBIAR CREDENCIALES
+// ════════════════════════════
+function showChangeCredentials() {
+  const existing = document.getElementById('creds-overlay');
+  if (existing) existing.remove();
+
+  const isAdmin = currentUser.role === 'admin';
+  const overlay = document.createElement('div');
+  overlay.id = 'creds-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+
+  overlay.innerHTML = `
+  <div style="background:#fff;border-radius:18px;padding:28px;max-width:440px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,0.3);font-family:'DM Sans',sans-serif;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'DM Serif Display',serif;font-size:20px;color:#c4611f;">🔑 Cambiar credenciales</div>
+      <button onclick="document.getElementById('creds-overlay').remove()" style="background:#f4f1eb;border:none;padding:6px 10px;border-radius:7px;cursor:pointer;font-size:14px;">✕</button>
+    </div>
+
+    ${isAdmin ? `
+    <!-- Panel admin: cambiar su propio usuario/contraseña -->
+    <div style="background:#f8f5f0;border-radius:12px;padding:16px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:#c4611f;margin-bottom:12px;">Tu cuenta de administrador</div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Nombre de usuario</label>
+        <input id="c-user" type="text" value="${currentUser.username}"
+          style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;outline:none;"
+          onfocus="this.style.borderColor='#c4611f'" onblur="this.style.borderColor='#ddd'" />
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Nombre para mostrar</label>
+        <input id="c-display" type="text" value="${currentUser.displayName || ''}"
+          style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;outline:none;"
+          onfocus="this.style.borderColor='#c4611f'" onblur="this.style.borderColor='#ddd'" />
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Nueva contraseña <span style="color:#bbb;font-weight:400;">(vacío = no cambiar)</span></label>
+        <input id="c-pass1" type="text" placeholder="Nueva contraseña"
+          style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;outline:none;"
+          onfocus="this.style.borderColor='#c4611f'" onblur="this.style.borderColor='#ddd'" />
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Confirmar contraseña</label>
+        <input id="c-pass2" type="text" placeholder="Repetir contraseña"
+          style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;outline:none;"
+          onfocus="this.style.borderColor='#c4611f'" onblur="this.style.borderColor='#ddd'" />
+      </div>
+      <button onclick="guardarMisCreds()"
+        style="width:100%;padding:11px;background:#c4611f;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">
+        💾 Guardar mis credenciales
+      </button>
+    </div>
+
+    <!-- Cambiar contraseña de otro usuario -->
+    <div style="background:#f0f7ff;border-radius:12px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:#2a6496;margin-bottom:12px;">Cambiar contraseña de otro usuario</div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Usuario</label>
+        <select id="c-other-user" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit;outline:none;">
+          <option value="">— Seleccionar —</option>
+          ${Object.keys(allUsers).filter(u => u !== currentUser.username).map(u =>
+            `<option value="${u}">${u}${allUsers[u].displayName ? ' — ' + allUsers[u].displayName : ''}</option>`
+          ).join('')}
+        </select>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Nueva contraseña</label>
+        <input id="c-other-pass" type="text" placeholder="Nueva contraseña para ese usuario"
+          style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit;outline:none;" />
+      </div>
+      <button onclick="guardarClavOtro()"
+        style="width:100%;padding:10px;background:#2a6496;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">
+        🔑 Cambiar contraseña
+      </button>
+    </div>
+    ` : `
+    <!-- Usuario normal: solo su propia contraseña -->
+    <div style="background:#f8f5f0;border-radius:12px;padding:16px;">
+      <div style="font-size:12px;color:#555;margin-bottom:12px;">Usuario: <strong>${currentUser.username}</strong></div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Contraseña actual</label>
+        <input id="c-old" type="password" placeholder="••••••••"
+          style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;outline:none;" />
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Nueva contraseña</label>
+        <input id="c-pass1" type="text" placeholder="Nueva contraseña"
+          style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;outline:none;" />
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Confirmar nueva contraseña</label>
+        <input id="c-pass2" type="text" placeholder="Repetir contraseña"
+          style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;outline:none;" />
+      </div>
+      <button onclick="guardarMiClave()"
+        style="width:100%;padding:11px;background:#c4611f;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">
+        💾 Cambiar mi contraseña
+      </button>
+    </div>
+    `}
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+// Admin guarda su propio usuario y/o contraseña
+async function guardarMisCreds() {
+  const newUsername = document.getElementById('c-user').value.trim().toLowerCase().replace(/\s+/g,'');
+  const newDisplay  = document.getElementById('c-display').value.trim();
+  const pass1 = document.getElementById('c-pass1').value;
+  const pass2 = document.getElementById('c-pass2').value;
+
+  if (!newUsername) { toast('El nombre de usuario no puede estar vacío.', 'error'); return; }
+  if (pass1 && pass1 !== pass2) { toast('Las contraseñas no coinciden.', 'error'); return; }
+  if (pass1 && pass1.length < 4) { toast('Mínimo 4 caracteres.', 'error'); return; }
+
+  const oldUsername = currentUser.username;
+  const currentPass = allUsers[oldUsername]?.password || 'admin2024saylla';
+  const newPass = pass1 || currentPass;
+
+  // Si cambia nombre de usuario
+  if (newUsername !== oldUsername) {
+    if (allUsers[newUsername]) { toast(`Ya existe un usuario con ese nombre.`, 'error'); return; }
+    allUsers[newUsername] = { password: newPass, role: 'admin', displayName: newDisplay || 'Administrador' };
+    delete allUsers[oldUsername];
+  } else {
+    allUsers[oldUsername] = { password: newPass, role: 'admin', displayName: newDisplay || 'Administrador' };
+  }
+
+  // Guardar en Sheets
+  await syncUsersToSheets();
+
+  // Actualizar sesión local
+  currentUser = { username: newUsername, role: 'admin', displayName: newDisplay || 'Administrador' };
+  localStorage.setItem('cuaderno_session', JSON.stringify(currentUser));
+  updateUserBadge();
+
+  document.getElementById('creds-overlay').remove();
+  toast('✅ Credenciales actualizadas en Google Sheets. El cambio es inmediato en todas las PCs.', 'success');
+}
+
+// Admin cambia clave de otro usuario
+async function guardarClavOtro() {
+  const uname = document.getElementById('c-other-user').value;
+  const pass  = document.getElementById('c-other-pass').value.trim();
+  if (!uname) { toast('Selecciona un usuario.', 'error'); return; }
+  if (pass.length < 4) { toast('Mínimo 4 caracteres.', 'error'); return; }
+  allUsers[uname] = { ...allUsers[uname], password: pass };
+  await syncUsersToSheets();
+  document.getElementById('creds-overlay').remove();
+  toast(`✅ Contraseña de "${uname}" actualizada en Google Sheets.`, 'success');
+}
+
+// Usuario normal cambia su propia clave
+async function guardarMiClave() {
+  const old  = document.getElementById('c-old').value;
+  const pass1 = document.getElementById('c-pass1').value;
+  const pass2 = document.getElementById('c-pass2').value;
+  if (old !== allUsers[currentUser.username]?.password) { toast('La contraseña actual no es correcta.', 'error'); return; }
+  if (!pass1 || pass1.length < 4) { toast('Mínimo 4 caracteres.', 'error'); return; }
+  if (pass1 !== pass2) { toast('Las contraseñas no coinciden.', 'error'); return; }
+  allUsers[currentUser.username] = { ...allUsers[currentUser.username], password: pass1 };
+  await syncUsersToSheets();
+  document.getElementById('creds-overlay').remove();
+  toast('✅ Contraseña cambiada correctamente.', 'success');
+}
+function updateSheetsUI(connected) {
+  const btn = document.getElementById('drive-btn');
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  const syncBtn = document.getElementById('sync-btn');
+  if (!btn) return;
+  if (connected) {
+    btn.innerHTML = `✅ Sheets conectado`;
+    btn.className = 'btn btn-drive connected';
+    if (dot) dot.className = 'status-dot dot-online';
+    if (txt) txt.innerHTML = '<strong>Google Sheets conectado</strong> — Todos los usuarios ven los mismos datos.';
+    if (syncBtn) syncBtn.style.display = 'flex';
+    const forceBtn = document.getElementById('force-btn');
+    if (forceBtn) forceBtn.style.display = 'flex';
+  } else {
+    btn.innerHTML = `☁️ Sin Sheets`;
+    btn.className = 'btn btn-drive';
+    if (dot) dot.className = 'status-dot dot-offline';
+    if (txt) txt.innerHTML = '<strong>Sin Google Sheets</strong> — Edita el HTML y pon tu URL de Apps Script.';
+    if (syncBtn) syncBtn.style.display = 'none';
+  }
+}
+
+async function syncNow() {
+  if (!navigator.onLine) { toast('⚠️ Sin conexión. Los datos se subirán al reconectarse.', 'error'); return; }
+  toast('Sincronizando con Google Sheets…');
+  const ok = await syncToSheets();
+  if (ok) { clearPending(); toast('✅ Sincronización completada. Datos disponibles en todas las PCs.', 'success'); }
+  else     { markPending(); toast('⚠️ No se pudo sincronizar. Revisa tu conexión.', 'error'); }
+}
+
+// RESCATE: fuerza subida de TODOS los asientos locales a Sheets
+async function forceUploadAll() {
+  if (!navigator.onLine) { toast('⚠️ Sin conexión.', 'error'); return; }
+  if (!confirm('¿Forzar subida de TODOS los asientos de esta PC a Google Sheets?\n\nEsto solucionará el problema de asientos que no aparecen en otras PCs.')) return;
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  if (dot) dot.className = 'status-dot dot-syncing';
+  if (txt) txt.innerHTML = '<strong>Subiendo todos los datos...</strong> No cierres esta ventana.';
+  toast('⬆️ Forzando subida de ' + asientos.length + ' asiento(s)...', 'success');
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'write', data: asientos }),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    clearPending();
+    if (dot) dot.className = 'status-dot dot-online';
+    if (txt) txt.innerHTML = '<strong>Google Sheets conectado</strong> — Todos los usuarios ven los mismos datos.';
+    toast('✅ ¡Subida exitosa! ' + asientos.length + ' asiento(s) disponibles en todas las PCs.', 'success');
+  } catch(e) {
+    if (dot) dot.className = 'status-dot dot-offline';
+    toast('❌ Error: ' + e.message + '. Verifica tu conexión e inténtalo de nuevo.', 'error');
+  }
+}
+
+function initRows() {
+  // Add default empty rows
+  addMovRow('ingresos');
+  addMovRow('salidas');
+  addEquipoRow();
+  addActividadRow();
+  addMetradoRow();
+  addObsRow();
+}
+
+// ════════════════════════════
+//  TABS
+// ════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ════════════════════════════
+//  PERSONAL
+// ════════════════════════════
+function calcTotal() {
+  const ids = ['p-residente','p-inspector','p-asti','p-ast','p-aadm','p-almacenero','p-ssoma','p-capataz','p-guardian','p-oficiales','p-operarios','p-peones','p-opequipo'];
+  const total = ids.reduce((s, id) => s + (parseInt(document.getElementById(id).value) || 0), 0);
+  document.getElementById('total-personal').textContent = total;
+}
+
+function getPersonalData() {
+  return {
+    residente: val('p-residente'), inspector: val('p-inspector'), asti: val('p-asti'), ast: val('p-ast'), aadm: val('p-aadm'),
+    almacenero: val('p-almacenero'), ssoma: val('p-ssoma'),
+    capataz: val('p-capataz'), guardian: val('p-guardian'), oficiales: val('p-oficiales'),
+    operarios: val('p-operarios'), peones: val('p-peones'), opequipo: val('p-opequipo'),
+    total: parseInt(document.getElementById('total-personal').textContent) || 0
+  };
+}
+
+function setPersonalData(p) {
+  if (!p) return;
+  const map = { residente:'p-residente', inspector:'p-inspector', asti:'p-asti', ast:'p-ast', aadm:'p-aadm', almacenero:'p-almacenero',
+    ssoma:'p-ssoma', capataz:'p-capataz', guardian:'p-guardian', oficiales:'p-oficiales',
+    operarios:'p-operarios', peones:'p-peones', opequipo:'p-opequipo' };
+  Object.keys(map).forEach(k => { if (p[k] !== undefined) document.getElementById(map[k]).value = p[k]; });
+  calcTotal();
+}
+
+// ════════════════════════════
+//  ALMACEN ROWS
+// ════════════════════════════
+function addMovRow(type) {
+  const container = document.getElementById(type + '-list');
+  const div = document.createElement('div');
+  div.className = 'movimiento-item';
+  div.innerHTML = `
+    <input type="text" placeholder="Descripción del bien" />
+    <input type="text" placeholder="Unidad" />
+    <input type="number" min="0" step="any" placeholder="Cant." />
+    <button class="btn-del" onclick="this.parentElement.remove()">×</button>
+  `;
+  container.appendChild(div);
+}
+
+function getMovRows(type) {
+  const rows = [];
+  document.querySelectorAll('#' + type + '-list .movimiento-item').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    if (inputs[0].value.trim()) {
+      rows.push({ desc: inputs[0].value.trim(), unidad: inputs[1].value.trim(), cant: inputs[2].value });
+    }
+  });
+  return rows;
+}
+
+function setMovRows(type, data) {
+  const container = document.getElementById(type + '-list');
+  container.innerHTML = '';
+  if (!data || !data.length) { addMovRow(type); return; }
+  data.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'movimiento-item';
+    div.innerHTML = `
+      <input type="text" value="${esc(r.desc)}" placeholder="Descripción" />
+      <input type="text" value="${esc(r.unidad)}" placeholder="Unidad" />
+      <input type="number" value="${r.cant}" placeholder="Cant." />
+      <button class="btn-del" onclick="this.parentElement.remove()">×</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ════════════════════════════
+//  EQUIPO ROWS
+// ════════════════════════════
+function addEquipoRow() {
+  const container = document.getElementById('equipo-list');
+  const div = document.createElement('div');
+  div.className = 'equipo-row';
+  div.innerHTML = `
+    <input type="text" placeholder="Equipo / Descripción" />
+    <input type="number" min="0" step="0.5" placeholder="HM" />
+    <input type="number" min="0" step="any" placeholder="Galones" />
+    <select>
+      <option value="">— Modalidad —</option>
+      <option>Alquiler</option>
+      <option>Convenio</option>
+      <option>Aporte Beneficiarios</option>
+      <option>Propiedad M.D.S.</option>
+      <option>Propiedad de la Obra</option>
+      <option>Herramientas manuales</option>
+    </select>
+    <button class="btn-del" onclick="this.parentElement.remove()">×</button>
+  `;
+  container.appendChild(div);
+}
+
+function getEquipoRows() {
+  const rows = [];
+  document.querySelectorAll('#equipo-list .equipo-row').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const sel = row.querySelector('select');
+    if (inputs[0].value.trim()) {
+      rows.push({ equipo: inputs[0].value, hm: inputs[1].value, comb: inputs[2].value, modalidad: sel.value });
+    }
+  });
+  return rows;
+}
+
+function setEquipoRows(data) {
+  const container = document.getElementById('equipo-list');
+  container.innerHTML = '';
+  if (!data || !data.length) { addEquipoRow(); return; }
+  data.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'equipo-row';
+    const modalidades = ['','Alquiler','Convenio','Aporte Beneficiarios','Propiedad M.D.S.','Propiedad de la Obra','Herramientas manuales'];
+    const opts = modalidades.map(m => `<option${m===r.modalidad?' selected':''}>${m}</option>`).join('');
+    div.innerHTML = `
+      <input type="text" value="${esc(r.equipo)}" placeholder="Equipo" />
+      <input type="number" value="${r.hm}" placeholder="HM" />
+      <input type="number" value="${r.comb}" placeholder="Galones" />
+      <select>${opts}</select>
+      <button class="btn-del" onclick="this.parentElement.remove()">×</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ════════════════════════════
+//  ACTIVIDADES ROWS
+// ════════════════════════════
+function addActividadRow() {
+  const container = document.getElementById('actividades-list');
+  const div = document.createElement('div');
+  div.className = 'actividad-box';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <span style="font-size:11px;font-weight:600;color:var(--text-muted);">ACTIVIDAD ${container.children.length + 1}</span>
+      <button class="btn-del" onclick="this.closest('.actividad-box').remove()">× Eliminar</button>
+    </div>
+    <textarea placeholder="Descripción de la actividad realizada…"></textarea>
+  `;
+  container.appendChild(div);
+}
+
+function getActividadRows() {
+  const rows = [];
+  document.querySelectorAll('#actividades-list textarea').forEach(ta => {
+    if (ta.value.trim()) rows.push(ta.value.trim());
+  });
+  return rows;
+}
+
+function setActividadRows(data) {
+  const container = document.getElementById('actividades-list');
+  container.innerHTML = '';
+  if (!data || !data.length) { addActividadRow(); return; }
+  data.forEach((txt, i) => {
+    const div = document.createElement('div');
+    div.className = 'actividad-box';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:11px;font-weight:600;color:var(--text-muted);">ACTIVIDAD ${i+1}</span>
+        <button class="btn-del" onclick="this.closest('.actividad-box').remove()">× Eliminar</button>
+      </div>
+      <textarea>${esc(txt)}</textarea>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ════════════════════════════
+//  METRADOS ROWS — 3 grupos: programadas / mayores / nuevas
+// ════════════════════════════
+// El campo `metrados` en cada asiento es ahora:
+//   { programadas:[...], mayores:[...], nuevas:[...] }
+// Asientos importados con formato antiguo (array plano) se tratan
+// todos como "programadas" para compatibilidad total.
+
+function _makeMetradoTr(r) {
+  const combined = r ? (r.itemDesc || [r.item, r.desc].filter(Boolean).join('      ')) : '';
+  const metVal   = r ? (r.metrado || '') : '';
+  const undVal   = r ? (r.unidad  || '') : '';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td colspan="1"><input type="text" value="${esc(combined)}" placeholder="02.01.01.01.01      DESCRIPCIÓN DE PARTIDA" style="width:100%;font-family:monospace;font-size:12px;" /></td>
+    <td><input type="number" step="any" min="0" value="${metVal}" placeholder="0.00" /></td>
+    <td><input type="text" value="${esc(undVal)}" placeholder="M3/ML/UND…" /></td>
+    <td><button class="btn-del" onclick="this.closest('tr').remove()">×</button></td>
+  `;
+  return tr;
+}
+
+function addMetradoRow() { addMetradoRowTo('programadas'); }  // alias legacy
+
+function addMetradoRowTo(grupo) {
+  const tbody = document.getElementById('metrados-' + grupo);
+  if (tbody) tbody.appendChild(_makeMetradoTr(null));
+}
+
+function _getRowsFromTbody(tbodyId) {
+  const rows = [];
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return rows;
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    const fullText = inputs[0] ? inputs[0].value.trim() : '';
+    if (fullText) {
+      const match = fullText.match(/^(\S+)\s+(.+)$/);
+      const item = match ? match[1] : fullText;
+      const desc = match ? match[2].trim() : '';
+      rows.push({ item, desc, itemDesc: fullText, metrado: inputs[1] ? inputs[1].value : '', unidad: inputs[2] ? inputs[2].value : '' });
+    }
+  });
+  return rows;
+}
+
+function getMetradoRows() {
+  return {
+    programadas: _getRowsFromTbody('metrados-programadas'),
+    mayores:     _getRowsFromTbody('metrados-mayores'),
+    nuevas:      _getRowsFromTbody('metrados-nuevas')
+  };
+}
+
+function _fillTbody(tbodyId, data) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  (data || []).forEach(r => tbody.appendChild(_makeMetradoTr(r)));
+}
+
+function setMetradoRows(data) {
+  if (!data) {
+    // Formulario vacío: solo fila vacía en programadas
+    _fillTbody('metrados-programadas', [null]);
+    _fillTbody('metrados-mayores',     []);
+    _fillTbody('metrados-nuevas',      []);
+    return;
+  }
+  if (Array.isArray(data)) {
+    // Formato antiguo: array plano → todo va a programadas
+    _fillTbody('metrados-programadas', data.length ? data : [null]);
+    _fillTbody('metrados-mayores',     []);
+    _fillTbody('metrados-nuevas',      []);
+  } else {
+    // Formato nuevo: objeto con 3 grupos
+    const p = data.programadas || [];
+    _fillTbody('metrados-programadas', p.length ? p : [null]);
+    _fillTbody('metrados-mayores',     data.mayores || []);
+    _fillTbody('metrados-nuevas',      data.nuevas  || []);
+  }
+}
+
+// ════════════════════════════
+//  OBS ROWS
+// ════════════════════════════
+function addObsRow() {
+  const container = document.getElementById('obs-list');
+  const div = document.createElement('div');
+  div.className = 'obs-item';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <div class="obs-tag">Observación ${container.children.length + 1}</div>
+      <button class="btn-del" onclick="this.closest('.obs-item').remove()">× Eliminar</button>
+    </div>
+    <textarea placeholder="Describa la observación, condición climática, comunicación oficial, etc."></textarea>
+  `;
+  container.appendChild(div);
+}
+
+function getObsRows() {
+  const rows = [];
+  document.querySelectorAll('#obs-list textarea').forEach(ta => {
+    if (ta.value.trim()) rows.push(ta.value.trim());
+  });
+  return rows;
+}
+
+function setObsRows(data) {
+  const container = document.getElementById('obs-list');
+  container.innerHTML = '';
+  if (!data || !data.length) { addObsRow(); return; }
+  data.forEach((txt, i) => {
+    const div = document.createElement('div');
+    div.className = 'obs-item';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div class="obs-tag">Observación ${i+1}</div>
+        <button class="btn-del" onclick="this.closest('.obs-item').remove()">× Eliminar</button>
+      </div>
+      <textarea>${esc(txt)}</textarea>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ════════════════════════════
+//  SIDEBAR
+// ════════════════════════════
+function toggleSidebar() { document.body.classList.toggle('sidebar-collapsed'); }
+
+function populateMonthFilters() {
+  // Build sorted unique YYYY-MM list from asientos
+  const months = [...new Set(asientos.map(a => a.fecha ? a.fecha.slice(0,7) : ''))].filter(Boolean).sort().reverse();
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const toLabel = ym => { const [y,m] = ym.split('-'); return MESES[parseInt(m,10)-1] + ' ' + y; };
+
+  ['sb-month','tbl-month'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    // Remove all options except the first (placeholder)
+    while (sel.options.length > 1) sel.remove(1);
+    months.forEach(ym => {
+      const opt = document.createElement('option');
+      opt.value = ym;
+      opt.textContent = toLabel(ym);
+      sel.appendChild(opt);
+    });
+    // Restore selection if still valid
+    if (months.includes(cur)) sel.value = cur;
+  });
+}
+
+function renderSidebar(filter = '') {
+  populateMonthFilters();
+  const list = document.getElementById('sb-list');
+  const q = filter.toLowerCase();
+  const monthFilter = document.getElementById('sb-month') ? document.getElementById('sb-month').value : '';
+  const filtered = asientos.filter(a => {
+    const matchQ = !q || a.num.toLowerCase().includes(q) || (a.desc||'').toLowerCase().includes(q) || (a.resp||'').toLowerCase().includes(q);
+    const matchM = !monthFilter || (a.fecha && a.fecha.startsWith(monthFilter));
+    return matchQ && matchM;
+  });
+  document.getElementById('sb-total').textContent = asientos.length;
+  const now = new Date();
+  const weekAgo = new Date(now - 7*24*60*60*1000);
+  document.getElementById('sb-week').textContent = asientos.filter(a => new Date(a.fecha) >= weekAgo).length;
+  document.getElementById('sb-alertas').textContent = asientos.filter(a => a.tipo === 'Alerta').length;
+
+  if (!filtered.length) { list.innerHTML = '<div class="sidebar-empty">Sin asientos' + (q ? ' encontrados' : ' registrados') + '</div>'; return; }
+  const sorted = [...filtered].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  list.innerHTML = sorted.map(a => {
+    const bc = a.tipo === 'Alerta' ? 'badge-alerta' : a.tipo === 'Informativo' ? 'badge-info' : 'badge-normal';
+    const preview = a.actividades && a.actividades.length ? a.actividades[0].substring(0, 60) : (a.desc || '—');
+    return `<div class="sidebar-item" onclick="openDetailById('${a.id}')">
+      <div class="s-num">Asiento N° ${esc(a.num)}</div>
+      <div class="s-date">${formatDate(a.fecha)} — ${esc(a.resp||'')}</div>
+      <div class="s-preview">${esc(preview)}</div>
+      <span class="s-badge ${bc}">${a.tipo}</span>
+    </div>`;
+  }).join('');
+}
+
+function filterSidebar() { renderSidebar(document.getElementById('sb-search').value); }
+function updateSbMonthColor(sel) {
+  sel.style.color = sel.value ? '#fff' : 'rgba(200,208,224,0.5)';
+}
+
+// ════════════════════════════
+//  FORM / CRUD
+// ════════════════════════════
+function val(id) { return parseInt(document.getElementById(id).value) || 0; }
+
+function saveAsiento() {
+  if (currentUser && currentUser.role === 'viewer') { toast('No tienes permisos para guardar asientos.', 'error'); return; }
+  const num = document.getElementById('f-num').value.trim();
+  const fecha = document.getElementById('f-fecha').value;
+  const tipo = document.getElementById('f-tipo').value;
+  const resp = document.getElementById('f-resp').value;
+
+  if (!num || !fecha) { toast('Por favor completa: número y fecha.', 'error'); return; }
+
+  const personal = getPersonalData();
+  const ingresos = getMovRows('ingresos');
+  const salidas = getMovRows('salidas');
+  const equipos = getEquipoRows();
+  const actividades = getActividadRows();
+  const metrados = getMetradoRows();
+  const observaciones = getObsRows();
+  const alSupervisor = document.getElementById('f-al-supervisor').value.trim();
+
+  // Summary for table
+  const desc = actividades.length ? actividades[0] : '(Sin actividades registradas)';
+
+  const record = {
+    id: editingId || ('a_' + Date.now()),
+    num, fecha, tipo, resp, desc,
+    personal, ingresos, salidas, equipos, actividades, metrados, observaciones, alSupervisor,
+    updated: new Date().toISOString()
+  };
+
+  if (editingId) {
+    const idx = asientos.findIndex(a => a.id === editingId);
+    if (idx !== -1) { asientos[idx] = { ...asientos[idx], ...record }; }
+    toast('Asiento actualizado correctamente.', 'success');
+    editingId = null;
+    document.getElementById('form-title').textContent = 'Nuevo Asiento';
+    persist();
+    clearForm();
+  } else {
+    if (asientos.find(a => a.num === num)) {
+      if (!confirm(`Ya existe el asiento N° "${num}". ¿Deseas guardarlo de todas formas?`)) return;
+    }
+    asientos.push({ ...record, created: new Date().toISOString() });
+    toast('✅ Asiento guardado. Se copiaron datos al siguiente asiento.', 'success');
+    persist();
+    // Pasar datos al nuevo asiento (correlativo + persistencia)
+    clearFormWithCarryOver(record);
+  }
+
+  renderTable();
+  renderSidebar();
+  // persist() ya sube a Sheets automáticamente
+}
+
+// Limpia el formulario pero lleva los datos persistentes al siguiente asiento
+function clearFormWithCarryOver(lastRecord) {
+  // ── Número correlativo ──────────────────────────────────────────
+  // Intenta incrementar el número. Si es numérico puro lo suma +1.
+  // Si tiene prefijo/sufijo (ej. "A-139") incrementa solo la parte numérica.
+  const nextNum = incrementNum(lastRecord.num);
+  document.getElementById('f-num').value = nextNum;
+
+  // ── Fecha correlativa: día siguiente al asiento anterior (saltar domingos) ───────
+  const prevDate = new Date(lastRecord.fecha + 'T12:00:00');
+  prevDate.setDate(prevDate.getDate() + 1);
+  if (prevDate.getDay() === 0) prevDate.setDate(prevDate.getDate() + 1); // saltar domingo
+  document.getElementById('f-fecha').value = prevDate.toISOString().slice(0,10);
+  document.getElementById('f-tipo').value = 'Normal';
+  document.getElementById('f-resp').value = lastRecord.resp || 'DEL RESIDENTE DE OBRA';
+  document.getElementById('f-al-supervisor').value = '';
+  document.getElementById('form-title').textContent = 'Nuevo Asiento';
+  editingId = null;
+
+  // ── Personal: se mantiene igual ────────────────────────────────
+  setPersonalData(lastRecord.personal);
+
+  // ── Almacén: vaciar (movimientos son diarios) ──────────────────
+  document.getElementById('ingresos-list').innerHTML = '';
+  document.getElementById('salidas-list').innerHTML = '';
+  addMovRow('ingresos');
+  addMovRow('salidas');
+
+  // ── Equipo: mantener todos los equipos, limpiar HM y combustible ─
+  if (lastRecord.equipos && lastRecord.equipos.length > 0) {
+    const equiposLimpios = lastRecord.equipos.map(e => ({ ...e, hm: '', comb: '' }));
+    setEquipoRows(equiposLimpios);
+  } else {
+    document.getElementById('equipo-list').innerHTML = '';
+    addEquipoRowWithModalidad('Herramientas manuales');
+  }
+
+  // ── Actividades: copiar del asiento anterior ───────────────────
+  setActividadRows(lastRecord.actividades || []);
+
+  // ── Metrados: copiar del asiento anterior ─────────────────────
+  // Limpiar solo el valor del metrado, mantener ítem/descripción/unidad
+  // Cargar metrados del asiento anterior limpiando los valores
+  { const md = lastRecord.metrados;
+    if (!md || Array.isArray(md)) {
+      const arr = (md||[]).map(m => ({...m, metrado:''}));
+      setMetradoRows(arr.length ? arr : null);
+    } else {
+      setMetradoRows({
+        programadas: (md.programadas||[]).map(m=>({...m,metrado:''})),
+        mayores:     (md.mayores||[]).map(m=>({...m,metrado:''})),
+        nuevas:      (md.nuevas||[]).map(m=>({...m,metrado:''}))
+      });
+    }
+  }
+
+  // ── Observaciones: copiar del asiento anterior ────────────────
+  setObsRows(lastRecord.observaciones || []);
+
+  showTab('personal');
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+}
+
+// Incrementa el número de asiento de forma inteligente
+function incrementNum(numStr) {
+  if (!numStr) return '';
+  // Si es puramente numérico
+  if (/^\d+$/.test(numStr.trim())) {
+    return String(parseInt(numStr.trim(), 10) + 1);
+  }
+  // Si tiene parte numérica al final (ej. "A-139", "AS-05")
+  const match = numStr.match(/^(.*?)(\d+)(\D*)$/);
+  if (match) {
+    const prefix = match[1];
+    const num = parseInt(match[2], 10) + 1;
+    const padded = String(num).padStart(match[2].length, '0');
+    const suffix = match[3];
+    return prefix + padded + suffix;
+  }
+  return numStr; // no se pudo parsear, devolver igual
+}
+
+// Agrega una fila de equipo con modalidad preseleccionada
+function addEquipoRowWithModalidad(modalidad) {
+  const container = document.getElementById('equipo-list');
+  const div = document.createElement('div');
+  div.className = 'equipo-row';
+  const modalidades = ['','Alquiler','Convenio','Aporte Beneficiarios','Propiedad M.D.S.','Propiedad de la Obra','Herramientas manuales'];
+  const opts = modalidades.map(m => `<option${m===modalidad?' selected':''}>${m}</option>`).join('');
+  div.innerHTML = `
+    <input type="text" placeholder="Equipo / Descripción" />
+    <input type="number" min="0" step="0.5" placeholder="HM" />
+    <input type="number" min="0" step="any" placeholder="Galones" />
+    <select>${opts}</select>
+    <button class="btn-del" onclick="this.parentElement.remove()">×</button>
+  `;
+  container.appendChild(div);
+}
+
+// ════════════════════════════
+//  COPIAR ÚLTIMO ASIENTO
+// ════════════════════════════
+function copyLastAsiento() {
+  if (!asientos.length) { toast('No hay asientos guardados para copiar.', 'error'); return; }
+  const sorted = [...asientos].sort((a, b) => {
+    const dateCompare = new Date(b.fecha) - new Date(a.fecha);
+    if (dateCompare !== 0) return dateCompare;
+    const na = parseInt(b.num) || 0, nb = parseInt(a.num) || 0;
+    return na - nb || b.num.localeCompare(a.num);
+  });
+  const last = sorted[0];
+  if (!editingId) {
+    document.getElementById('f-num').value = incrementNum(last.num);
+    const prevDate = new Date(last.fecha + 'T12:00:00');
+    prevDate.setDate(prevDate.getDate() + 1);
+    if (prevDate.getDay() === 0) prevDate.setDate(prevDate.getDate() + 1); // saltar domingo
+    document.getElementById('f-fecha').value = prevDate.toISOString().slice(0,10);
+  }
+  document.getElementById('f-tipo').value = last.tipo || 'Normal';
+  document.getElementById('f-resp').value = last.resp || 'DEL RESIDENTE DE OBRA';
+  document.getElementById('f-al-supervisor').value = '';
+  setPersonalData(last.personal);
+  document.getElementById('ingresos-list').innerHTML = '';
+  document.getElementById('salidas-list').innerHTML = '';
+  addMovRow('ingresos');
+  addMovRow('salidas');
+  if (last.equipos && last.equipos.length > 0) {
+    setEquipoRows(last.equipos.map(e => ({ ...e, hm: '', comb: '' })));
+  } else {
+    document.getElementById('equipo-list').innerHTML = '';
+    addEquipoRow();
+  }
+  setActividadRows(last.actividades || []);
+  { const md = last.metrados;
+    if (!md || Array.isArray(md)) {
+      const arr = (md||[]).map(m => ({...m, metrado:''}));
+      setMetradoRows(arr.length ? arr : null);
+    } else {
+      setMetradoRows({
+        programadas: (md.programadas||[]).map(m=>({...m,metrado:''})),
+        mayores:     (md.mayores||[]).map(m=>({...m,metrado:''})),
+        nuevas:      (md.nuevas||[]).map(m=>({...m,metrado:''}))
+      });
+    }
+  }
+  setObsRows(last.observaciones || []);
+  showTab('personal');
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+  toast('✅ Datos del Asiento N\u00b0 ' + last.num + ' copiados al formulario.', 'success');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function clearForm() {
+  document.getElementById('f-num').value = '';
+  document.getElementById('f-fecha').valueAsDate = new Date();
+  document.getElementById('f-tipo').value = 'Normal';
+  document.getElementById('f-resp').value = 'DEL RESIDENTE DE OBRA';
+  document.getElementById('f-al-supervisor').value = '';
+  document.getElementById('form-title').textContent = 'Nuevo Asiento';
+  editingId = null;
+
+  // Reset personal
+  ['p-residente','p-inspector','p-asti','p-ast','p-aadm','p-almacenero','p-ssoma','p-capataz','p-guardian','p-oficiales','p-operarios','p-peones','p-opequipo'].forEach(id => document.getElementById(id).value = 0);
+  calcTotal();
+
+  // Reset rows
+  document.getElementById('ingresos-list').innerHTML = '';
+  document.getElementById('salidas-list').innerHTML = '';
+  document.getElementById('equipo-list').innerHTML = '';
+  document.getElementById('actividades-list').innerHTML = '';
+  document.getElementById('metrados-list').innerHTML = '';
+  document.getElementById('obs-list').innerHTML = '';
+  addMovRow('ingresos'); addMovRow('salidas');
+  addEquipoRow(); addActividadRow();
+  // metrados: limpiar los 3 tbody
+  _fillTbody('metrados-programadas',[null]); _fillTbody('metrados-mayores',[]); _fillTbody('metrados-nuevas',[]);
+  addObsRow();
+
+  showTab('personal');
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+}
+
+function editAsiento(id) {
+  const a = asientos.find(x => x.id === id);
+  if (!a) return;
+  editingId = id;
+  document.getElementById('f-num').value = a.num;
+  document.getElementById('f-fecha').value = a.fecha;
+  document.getElementById('f-tipo').value = a.tipo;
+  document.getElementById('f-resp').value = a.resp || 'DEL RESIDENTE DE OBRA';
+  document.getElementById('f-al-supervisor').value = a.alSupervisor || '';
+  document.getElementById('form-title').textContent = 'Editando Asiento N° ' + a.num;
+
+  setPersonalData(a.personal);
+  setMovRows('ingresos', a.ingresos);
+  setMovRows('salidas', a.salidas);
+  setEquipoRows(a.equipos);
+  setActividadRows(a.actividades);
+  setMetradoRows(a.metrados);
+  setObsRows(a.observaciones);
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  closeDetailModal();
+}
+
+function deleteAsiento(id) {
+  if (currentUser && currentUser.role === 'viewer') { toast('No tienes permisos para eliminar asientos.', 'error'); return; }
+  if (!confirm('¿Eliminar este asiento? Esta acción no se puede deshacer.')) return;
+  asientos = asientos.filter(a => a.id !== id);
+  persist();
+  renderTable();
+  renderSidebar();
+  toast('Asiento eliminado.', 'success');
+  closeDetailModal();
+}
+
+async function persist() {
+  // ── SIEMPRE guardar en localStorage primero ──
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(asientos));
+
+  const tieneURL = APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
+  if (!tieneURL) {
+    // Sin Sheets configurado: solo local. Actualizar status.
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+    if (dot) dot.className = 'status-dot dot-online';
+    if (txt) txt.innerHTML = `<strong>Guardado localmente</strong> — ${asientos.length} asiento(s). Configura Google Sheets para sincronizar entre PCs.`;
+    return;
+  }
+  if (!navigator.onLine) {
+    markPending();
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+    if (dot) dot.className = 'status-dot dot-offline';
+    if (txt) txt.innerHTML = '<strong>⚠️ Sin conexión</strong> — Guardado localmente. Se subirá al reconectarse.';
+    toast('⚠️ Sin internet. Asiento guardado localmente. Se subirá automáticamente al reconectarse.', 'error');
+    return;
+  }
+  const ok = await syncToSheets();
+  if (ok) clearPending();
+  else   { markPending(); toast('⚠️ No se pudo subir a Sheets. Se reintentará automáticamente.', 'error'); }
+}
+function saveLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(asientos)); }
+
+// ════════════════════════════
+//  TABLE
+// ════════════════════════════
+function renderTable() {
+  const q = document.getElementById('tbl-search').value.toLowerCase();
+  const tipo = document.getElementById('tbl-filter').value;
+  const monthFilter = document.getElementById('tbl-month') ? document.getElementById('tbl-month').value : '';
+  let filtered = asientos.filter(a => {
+    const matchQ = !q || a.num.toLowerCase().includes(q) || (a.desc||'').toLowerCase().includes(q) || (a.resp||'').toLowerCase().includes(q);
+    const matchT = !tipo || a.tipo === tipo;
+    const matchM = !monthFilter || (a.fecha && a.fecha.startsWith(monthFilter));
+    return matchQ && matchT && matchM;
+  });
+  filtered.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  const tbody = document.getElementById('tbl-body');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📖</div><p>${asientos.length ? 'No se encontraron asientos con ese filtro.' : 'No hay asientos registrados aún.'}</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(a => {
+    const b = tipoBadge(a.tipo);
+    const pTotal = a.personal ? a.personal.total : '—';
+    return `<tr onclick="openDetailById('${a.id}')">
+      <td class="td-num">${esc(a.num)}</td>
+      <td class="td-date">${formatDate(a.fecha)}</td>
+      <td><span class="badge ${b.cls}">${a.tipo}</span></td>
+      <td style="font-size:12px;">${esc(a.resp || '—')}</td>
+      <td class="td-desc" title="${esc(a.desc)}">${esc(a.desc || '—')}</td>
+      <td style="text-align:center;" onclick="event.stopPropagation()">
+        <button class="btn btn-sm btn-outline btn-edit-action" onclick="editAsiento('${a.id}')" style="margin-right:3px;">✏️</button>
+        <button class="btn btn-sm btn-del-action" style="background:#fde8e8;color:var(--red);border:none;" onclick="deleteAsiento('${a.id}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ════════════════════════════
+//  MODAL
+// ════════════════════════════
+function openDetailById(id) {
+  const a = asientos.find(x => x.id === id);
+  if (!a) return;
+  currentModalId = id;
+  document.getElementById('modal-title').textContent = `Asiento N° ${a.num} — ${formatDate(a.fecha)}`;
+
+  const p = a.personal || {};
+  const personalHtml = p.total !== undefined ? `
+    <div style="background:var(--accent-light);border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:6px;">
+      <strong>Personal técnico:</strong> Residente(${p.residente||0}) | Inspector(${p.inspector||0}) | Asist.Téc.Insp.(${p.asti||0}) | Asist.Téc.Obra(${p.ast||0}) | Adm.Obra(${p.aadm||0}) | Almacenero(${p.almacenero||0}) | SSOMA(${p.ssoma||0})<br>
+      <strong>Obreros:</strong> Capataz(${p.capataz||0}) | Operarios(${p.operarios||0}) | Oficiales(${p.oficiales||0}) | Peones(${p.peones||0}) | Guardián(${p.guardian||0})<br>
+      <strong>TOTAL DIARIO: ${p.total||0} personas</strong>
+    </div>` : '';
+
+  const actHtml = (a.actividades||[]).map((t,i) => `<div style="margin-bottom:6px;padding:8px;background:var(--bg);border-radius:6px;font-size:13px;">${i+1}. ${esc(t)}</div>`).join('') || '<em style="color:var(--text-muted)">Sin actividades</em>';
+
+  // Construir tabla de metrados agrupados para el modal
+  function _metTable(rows, titulo, colorHdr) {
+    if (!rows || !rows.length) return '';
+    const filas = rows.map(m => {
+      const combined = m.itemDesc || [m.item, m.desc].filter(Boolean).join('      ');
+      return `<tr style="border-bottom:1px solid var(--border);"><td style="padding:5px 8px;font-family:monospace;color:var(--accent);">${esc(combined)}</td><td style="padding:5px 8px;">${m.metrado}</td><td style="padding:5px 8px;">${esc(m.unidad)}</td></tr>`;
+    }).join('');
+    return `<div style="margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;padding:4px 8px;background:${colorHdr};border-radius:5px 5px 0 0;margin-bottom:0;">${titulo}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="background:var(--sidebar-bg);color:#fff;"><th style="padding:5px 8px;">Ítem / Descripción de Partida</th><th style="padding:5px 8px;">Metrado</th><th style="padding:5px 8px;">UND</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table></div>`;
+  }
+  const md = a.metrados;
+  let metHtml = '';
+  if (!md || (Array.isArray(md) && !md.length) || (!Array.isArray(md) && !md.programadas?.length && !md.mayores?.length && !md.nuevas?.length)) {
+    metHtml = '<em style="color:var(--text-muted);font-size:12px;">Sin metrados registrados</em>';
+  } else if (Array.isArray(md)) {
+    // formato viejo
+    metHtml = _metTable(md, '📋 Partidas', '#e8f4ff; color:#2a6496');
+  } else {
+    metHtml  = _metTable(md.programadas, '📋 Partidas Programadas', '#e8f4ff; color:#2a6496');
+    metHtml += _metTable(md.mayores,     '📈 Mayores Metrados',     '#fff3cd; color:#856404');
+    metHtml += _metTable(md.nuevas,      '🆕 Partidas Nuevas / Adicionales', '#fde8e8; color:#c0392b');
+    if (!metHtml) metHtml = '<em style="color:var(--text-muted);font-size:12px;">Sin metrados registrados</em>';
+  }
+
+  const obsHtml = (a.observaciones||[]).map((o,i) => `<div style="margin-bottom:5px;font-size:13px;">• ${esc(o)}</div>`).join('') || '<em style="color:var(--text-muted)">Sin observaciones</em>';
+
+  const ingresosReales = (a.ingresos||[]).filter(r => r.desc && r.desc.trim());
+  const salidasReales  = (a.salidas||[]).filter(r => r.desc && r.desc.trim());
+  const tieneAlmacen   = ingresosReales.length > 0 || salidasReales.length > 0;
+
+  let almacenHtml = '<em style="color:var(--text-muted);font-size:12px;">Sin movimientos de almacén</em>';
+  if (tieneAlmacen) {
+    almacenHtml = '';
+    if (ingresosReales.length) {
+      almacenHtml += '<div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;margin-bottom:4px;">⬇ Ingresos</div>';
+      almacenHtml += ingresosReales.map(r => `<div style="font-size:12px;padding:4px 8px;background:var(--green-light);border-radius:5px;margin-bottom:3px;">${esc(r.desc)} &nbsp;|&nbsp; ${esc(r.unidad||'')} &nbsp;|&nbsp; Cant: ${r.cant}</div>`).join('');
+    }
+    if (salidasReales.length) {
+      almacenHtml += '<div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;margin:8px 0 4px;">⬆ Salidas</div>';
+      almacenHtml += salidasReales.map(r => `<div style="font-size:12px;padding:4px 8px;background:#fde8e8;border-radius:5px;margin-bottom:3px;">${esc(r.desc)} &nbsp;|&nbsp; ${esc(r.unidad||'')} &nbsp;|&nbsp; Cant: ${r.cant}</div>`).join('');
+    }
+  }
+
+  const equiposReales = (a.equipos||[]).filter(e => e.equipo && e.equipo.trim());
+  let equipoHtml = '<em style="color:var(--text-muted);font-size:12px;">Sin equipo registrado</em>';
+  if (equiposReales.length) {
+    equipoHtml = '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<thead><tr style="background:var(--sidebar-bg);color:#fff;">' +
+      '<th style="padding:5px 8px;text-align:left;">Equipo / Maquinaria</th>' +
+      '<th style="padding:5px 8px;text-align:center;">H.M.</th>' +
+      '<th style="padding:5px 8px;text-align:center;">Comb. (gal)</th>' +
+      '<th style="padding:5px 8px;text-align:left;">Modalidad</th></tr></thead><tbody>' +
+      equiposReales.map(e => `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:5px 8px;">${esc(e.equipo)}</td>
+        <td style="padding:5px 8px;text-align:center;">${e.hm||'—'}</td>
+        <td style="padding:5px 8px;text-align:center;">${e.comb||'—'}</td>
+        <td style="padding:5px 8px;">${esc(e.modalidad||'—')}</td>
+      </tr>`).join('') + '</tbody></table>';
+  }
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="detail-row"><div class="detail-label">Tipo</div><div class="detail-val"><span class="badge ${tipoBadge(a.tipo).cls}">${a.tipo}</span></div></div>
+    <div class="detail-row"><div class="detail-label">Responsable</div><div class="detail-val">${esc(a.resp||'—')}</div></div>
+    <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;">1. Personal</div>
+    ${personalHtml}
+    <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;">2. Almacén</div>
+    ${almacenHtml}
+    <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;">3. Equipo Mecánico</div>
+    ${equipoHtml}
+    <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;">4. Actividades</div>
+    ${actHtml}
+    <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;">Metrados Ejecutados</div>
+    ${metHtml}
+    <div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;">5. Observaciones</div>
+    ${obsHtml}
+    ${a.alSupervisor ? `<div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;">Al Supervisor</div><div style="font-size:13px;">${esc(a.alSupervisor)}</div>` : ''}
+  `;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function closeModal(e) { if (e.target.id === 'detail-modal') closeDetailModal(); }
+function closeDetailModal() { document.getElementById('detail-modal').classList.remove('open'); currentModalId = null; }
+function editFromModal() { if (currentModalId) editAsiento(currentModalId); }
+function deleteFromModal() { if (currentModalId) deleteAsiento(currentModalId); }
+
+// ══════════════════════════════════════════════════════════
+//  SINCRONIZACIÓN CON DRIVE — Estrategia File System Access
+//  Funciona desde file:// sin OAuth, sin servidores, sin config
+// ══════════════════════════════════════════════════════════
+
+// Variables de estado Drive
+let driveFileHandle  = null;   // FileSystemFileHandle del JSON guardado
+let driveAutoSave    = false;  // true cuando ya tenemos handle válido
+
+function toggleDrive() {
+  const connected = APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
+  if (connected) {
+    syncNow();
+  } else {
+    showConexionGuia();
+  }
+}
+
+function showConexionGuia() {
+  const existing = document.getElementById('guia-overlay');
+  if (existing) existing.remove();
+
+  const GAS_CODE = `function doGet(e) { return handleReq(e); }
+function doPost(e) { return handleReq(e); }
+function handleReq(e) {
+  var p = e.parameter, body = {};
+  try { if(e.postData) body=JSON.parse(e.postData.contents); } catch(x){}
+  var action = p.action || body.action;
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var shData  = ss.getSheetByName('Datos')   || ss.insertSheet('Datos');
+  var shUsers = ss.getSheetByName('Usuarios') || ss.insertSheet('Usuarios');
+  var out = {};
+  if(action==='read') {
+    var v = shData.getRange(1,1).getValue();
+    out = { ok:true, data: v ? JSON.parse(v) : [] };
+  } else if(action==='write') {
+    shData.getRange(1,1).setValue(JSON.stringify(body.data));
+    out = { ok:true };
+  } else if(action==='readUsers') {
+    var u = shUsers.getRange(1,1).getValue();
+    out = { ok:true, data: u ? JSON.parse(u) : {} };
+  } else if(action==='writeUsers') {
+    shUsers.getRange(1,1).setValue(JSON.stringify(body.data));
+    out = { ok:true };
+  }
+  return ContentService.createTextOutput(JSON.stringify(out))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'guia-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:900;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(5px);';
+
+  overlay.innerHTML = `
+  <div style="background:#fff;border-radius:20px;max-width:600px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 40px 100px rgba(0,0,0,0.4);font-family:'DM Sans',sans-serif;">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1a1f2e,#2a3550);border-radius:20px 20px 0 0;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:#e8a838;">☁️ Conectar Google Sheets</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:3px;">Sigue estos pasos una sola vez</div>
+      </div>
+      <button onclick="document.getElementById('guia-overlay').remove()"
+        style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+
+    <div style="padding:24px;">
+
+      <!-- Paso 1 -->
+      <div style="display:flex;gap:14px;margin-bottom:20px;">
+        <div style="min-width:32px;height:32px;background:#4285f4;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:#222;margin-bottom:4px;">Crear una hoja en Google Sheets</div>
+          <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:8px;">
+            Ve a <a href="https://sheets.google.com" target="_blank" style="color:#4285f4;font-weight:600;">sheets.google.com</a> y crea una hoja nueva. Puedes llamarla <strong>"Cuaderno de Obra"</strong>.
+          </div>
+          <a href="https://sheets.google.com/create" target="_blank"
+            style="display:inline-block;padding:7px 14px;background:#4285f4;color:#fff;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;">
+            Abrir Google Sheets →
+          </a>
+        </div>
+      </div>
+
+      <!-- Paso 2 -->
+      <div style="display:flex;gap:14px;margin-bottom:20px;">
+        <div style="min-width:32px;height:32px;background:#34a853;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:#222;margin-bottom:4px;">Abrir Apps Script</div>
+          <div style="font-size:13px;color:#555;line-height:1.6;">
+            Dentro de tu hoja, en el menú de arriba haz clic en:<br>
+            <span style="background:#f4f1eb;padding:3px 8px;border-radius:5px;font-family:monospace;font-size:12px;">Extensiones</span>
+            <span style="color:#aaa;margin:0 4px;">→</span>
+            <span style="background:#f4f1eb;padding:3px 8px;border-radius:5px;font-family:monospace;font-size:12px;">Apps Script</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 3 -->
+      <div style="display:flex;gap:14px;margin-bottom:20px;">
+        <div style="min-width:32px;height:32px;background:#fbbc04;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+        <div style="width:100%;">
+          <div style="font-weight:700;font-size:14px;color:#222;margin-bottom:4px;">Pegar este código en Apps Script</div>
+          <div style="font-size:13px;color:#555;margin-bottom:8px;">Borra todo lo que hay y pega el siguiente código:</div>
+          <div style="position:relative;">
+            <textarea id="gas-code-box" readonly
+              style="width:100%;height:160px;background:#1e1e2e;color:#a8ff78;font-family:monospace;font-size:11px;border:none;border-radius:10px;padding:14px;resize:none;outline:none;line-height:1.6;box-sizing:border-box;">${GAS_CODE}</textarea>
+            <button onclick="copiarCodigoGAS()"
+              style="position:absolute;top:10px;right:10px;background:#c4611f;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">
+              📋 Copiar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 4 -->
+      <div style="display:flex;gap:14px;margin-bottom:20px;">
+        <div style="min-width:32px;height:32px;background:#ea4335;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:#222;margin-bottom:4px;">Publicar como aplicación web</div>
+          <div style="font-size:13px;color:#555;line-height:1.8;">
+            En Apps Script haz clic en:
+            <span style="background:#f4f1eb;padding:3px 8px;border-radius:5px;font-family:monospace;font-size:12px;">Implementar</span>
+            <span style="color:#aaa;margin:0 4px;">→</span>
+            <span style="background:#f4f1eb;padding:3px 8px;border-radius:5px;font-family:monospace;font-size:12px;">Nueva implementación</span><br>
+            Luego configura así:<br>
+            • <strong>Tipo:</strong> Aplicación web<br>
+            • <strong>Ejecutar como:</strong> Yo<br>
+            • <strong>Quién tiene acceso:</strong> <span style="color:#c4611f;font-weight:700;">Cualquier persona</span><br>
+            Haz clic en <strong>Implementar</strong> y autoriza los permisos.
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 5 -->
+      <div style="display:flex;gap:14px;margin-bottom:24px;">
+        <div style="min-width:32px;height:32px;background:#c4611f;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</div>
+        <div style="width:100%;">
+          <div style="font-weight:700;font-size:14px;color:#222;margin-bottom:4px;">Copiar la URL y pegarla en el archivo HTML</div>
+          <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px;">
+            Google te dará una URL que empieza con:<br>
+            <span style="background:#f4f1eb;padding:3px 8px;border-radius:5px;font-family:monospace;font-size:11px;color:#c4611f;">https://script.google.com/macros/s/...</span><br><br>
+            Abre el archivo <strong>cuaderno-de-obra.html</strong> con el <strong>Bloc de notas</strong> (clic derecho → Abrir con → Bloc de notas), busca esta línea y reemplaza solo la parte resaltada:
+          </div>
+          <div style="background:#1e1e2e;border-radius:10px;padding:14px;font-family:monospace;font-size:12px;line-height:1.8;position:relative;">
+            <span style="color:#888;">const </span><span style="color:#79b8ff;">APPS_SCRIPT_URL</span><span style="color:#888;"> = </span><span style="background:#c4611f;color:#fff;padding:2px 6px;border-radius:4px;font-weight:700;">'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT'</span><span style="color:#888;">;</span>
+          </div>
+          <div style="margin-top:8px;font-size:12px;color:#3a8c5c;font-weight:600;">
+            ✅ Guarda el archivo y ya está. No necesitas hacer nada más.
+          </div>
+        </div>
+      </div>
+
+      <!-- Nota final -->
+      <div style="background:#e8f5e9;border-radius:12px;padding:14px 16px;font-size:12px;color:#2d7048;line-height:1.8;">
+        💡 <strong>¿Solo lo haces una vez?</strong> Sí. Una vez que pegas la URL en el HTML,
+        ese mismo archivo lo compartes con todos. Ellos no necesitan hacer ningún paso —
+        solo abrir el archivo e ingresar con su usuario y contraseña.
+      </div>
+
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+function copiarCodigoGAS() {
+  const el = document.getElementById('gas-code-box');
+  navigator.clipboard.writeText(el.value).then(() => {
+    const btn = el.parentElement.querySelector('button');
+    btn.textContent = '✅ Copiado';
+    setTimeout(() => { btn.textContent = '📋 Copiar'; }, 2000);
+  });
+}
+
+// ── Alias no-op para compatibilidad ──
+async function driveWriteFile() { return syncToSheets(); }
+async function ensureValidToken()  { return true; }
+async function refreshAccessToken(){ return true; }
+function needsReauth() {}
+function handleDriveError() {}
+function updateDriveUI(c) { updateSheetsUI(c); }
+
+// ════════════════════════════
+//  EXPORT WORD (RTF) — MEJORADO
+// ════════════════════════════
+
+// Convierte texto a RTF seguro: escapa backslash/llaves y codifica caracteres no ASCII como \uNNNN?
+function r(str) {
+  if (!str) return '';
+  return str.toString()
+    .replace(/\\/g, '\\\\')
+    .replace(/\{/g, '\\{')
+    .replace(/\}/g, '\\}')
+    .replace(/\r?\n/g, '\\line ')
+    .replace(/[^\x00-\x7F]/g, c => `\\u${c.charCodeAt(0)}?`);
+}
+
+// Texto simple sin caracteres especiales para metrados/items con padding
+function rpad(str, width) {
+  if (!str) return ' '.repeat(width);
+  const s = str.toString();
+  return s + ' '.repeat(Math.max(0, width - s.length));
+}
+
+function exportWord() {
+  if (!asientos.length) { toast('No hay asientos para exportar.', 'error'); return; }
+
+  // Mostrar panel de selección
+  showExportPanel();
+}
+
+function showExportPanel() {
+  const sorted = [...asientos].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+  const existing = document.getElementById('export-panel-overlay');
+  if (existing) existing.remove();
+
+  // Build months for filter
+  const months = [...new Set(asientos.map(a => a.fecha ? a.fecha.slice(0,7) : ''))].filter(Boolean).sort().reverse();
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const toLabel = ym => { const [y,m] = ym.split('-'); return MESES[parseInt(m,10)-1] + ' ' + y; };
+  const monthOpts = months.map(ym => `<option value="${ym}">${toLabel(ym)}</option>`).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'export-panel-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);';
+
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:0;max-width:600px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,0.35);overflow:hidden;font-family:'DM Sans',sans-serif;">
+
+      <!-- CABECERA -->
+      <div style="background:#1a1f2e;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="background:rgba(232,168,56,0.15);border-radius:8px;padding:7px 9px;font-size:18px;">📄</div>
+          <div>
+            <div style="font-family:'DM Serif Display',serif;font-size:16px;color:#e8a838;line-height:1.2;">Exportar a Word</div>
+            <div style="font-size:10px;color:rgba(200,208,224,0.5);margin-top:2px;letter-spacing:0.3px;">Filtra y selecciona los asientos a exportar</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('export-panel-overlay').remove()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+
+      <!-- FILTROS — zona compacta de 2 filas -->
+      <div style="padding:12px 16px;border-bottom:1px solid #eee;background:#f7f5f0;flex-shrink:0;">
+
+        <!-- Fila 1: Mes + Desde + Hasta + Limpiar -->
+        <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;">
+          <div>
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#aaa;margin-bottom:3px;">📅 Mes</div>
+            <select id="ep-month" onchange="applyExportFilters()" style="width:100%;padding:6px 9px;border:1.5px solid #ddd;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff;color:#333;">
+              <option value="">— Todos —</option>
+              ${monthOpts}
+            </select>
+          </div>
+          <div>
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#aaa;margin-bottom:3px;">Desde</div>
+            <input type="date" id="ep-desde" onchange="applyExportFilters()" style="width:100%;padding:6px 8px;border:1.5px solid #ddd;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff;" />
+          </div>
+          <div>
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#aaa;margin-bottom:3px;">Hasta</div>
+            <input type="date" id="ep-hasta" onchange="applyExportFilters()" style="width:100%;padding:6px 8px;border:1.5px solid #ddd;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff;" />
+          </div>
+          <button onclick="clearExportFilters()" title="Limpiar filtros" style="padding:6px 10px;background:#e8e4dc;color:#666;border:none;border-radius:7px;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;height:32px;">✕ Limpiar</button>
+        </div>
+
+        <!-- Fila 2: Buscar + Todos + Ninguno + contadores inline -->
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="ep-search" type="text" placeholder="🔍  Buscar por N°, fecha o responsable…"
+            oninput="applyExportFilters()"
+            style="flex:1;padding:6px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff;" />
+          <button onclick="epSelectAll(true)" style="padding:5px 11px;background:#e8a838;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;white-space:nowrap;">✔ Todos</button>
+          <button onclick="epSelectAll(false)" style="padding:5px 11px;background:#e0ddd8;color:#555;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;white-space:nowrap;">✗ Ninguno</button>
+        </div>
+
+        <!-- Contadores compactos -->
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <div style="flex:1;background:#fff;border:1px solid #e8e4dc;border-radius:7px;padding:5px 10px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;">Visibles</span>
+            <span id="ep-count-total" style="font-size:15px;font-weight:700;color:#2a6496;">${sorted.length}</span>
+          </div>
+          <div style="flex:1;background:#fff;border:1px solid #e8e4dc;border-radius:7px;padding:5px 10px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;">Seleccionados</span>
+            <span id="ep-count-sel" style="font-size:15px;font-weight:700;color:#3a8c5c;">0</span>
+          </div>
+          <div style="flex:1;background:#fff;border:1px solid #e8e4dc;border-radius:7px;padding:5px 10px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;">Págs. est.</span>
+            <span id="ep-count-pages" style="font-size:15px;font-weight:700;color:#c4611f;">~0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LISTA DE ASIENTOS -->
+      <div id="ep-list" style="flex:1;overflow-y:auto;min-height:0;">
+        <style>
+          .ep-row { display:flex !important; align-items:center !important; gap:10px; padding:9px 16px; cursor:pointer; border-bottom:1px solid #f2efe9; background:#fff; transition:background 0.1s; box-sizing:border-box; width:100%; }
+          .ep-row:nth-child(even) { background:#fdfcfa; }
+          .ep-row:hover { background:#fdf3e8 !important; }
+          .ep-row[style*="display: none"], .ep-row[style*="display:none"] { display:none !important; }
+          .ep-num-box { flex-shrink:0; width:40px; background:#fff7f2; border:1px solid #f0ddd0; border-radius:6px; padding:3px 4px; text-align:center; }
+          .ep-num-box .ep-num { font-size:12px; font-weight:800; color:#c4611f; line-height:1.2; display:block; }
+          .ep-num-box .ep-nlbl { font-size:7px; color:#ccc; letter-spacing:0.5px; text-transform:uppercase; display:block; }
+          .ep-info { flex:1; min-width:0; }
+          .ep-info-top { display:flex; align-items:center; gap:6px; margin-bottom:2px; flex-wrap:nowrap; }
+          .ep-fecha { font-size:11px; font-weight:600; color:#2a2a2a; white-space:nowrap; }
+          .ep-badge { font-size:9px; padding:2px 7px; border-radius:10px; font-weight:700; white-space:nowrap; flex-shrink:0; }
+          .ep-resp { font-size:10px; color:#888; margin-bottom:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+          .ep-prev { font-size:10px; color:#bbb; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+          .ep-cb-wrap { flex-shrink:0; display:flex; align-items:center; }
+        </style>
+        ${sorted.map(a => {
+          const bc = a.tipo === 'Alerta' ? '#fde8e8' : a.tipo === 'Informativo' ? '#d8eaf5' : '#d8f0e4';
+          const tc = a.tipo === 'Alerta' ? '#c0392b' : a.tipo === 'Informativo' ? '#2a6496' : '#3a8c5c';
+          const preview = a.actividades && a.actividades.length ? a.actividades[0].substring(0,90) : '—';
+          return `<label id="ep-item-${a.id}" class="ep-row"
+            data-fecha="${a.fecha||''}"
+            data-num="${(a.num||'').toLowerCase()}"
+            data-resp="${(a.resp||'').toLowerCase()}"
+            data-fecha-label="${formatDate(a.fecha).toLowerCase()}">
+              <span class="ep-cb-wrap"><input type="checkbox" class="ep-cb" data-id="${a.id}" onchange="updateExportCount()" style="width:15px;height:15px;accent-color:#c4611f;cursor:pointer;margin:0;" /></span>
+              <span class="ep-num-box"><span class="ep-num">${esc(a.num)}</span><span class="ep-nlbl">N°</span></span>
+              <span class="ep-info">
+                <span class="ep-info-top">
+                  <span class="ep-fecha">${formatDate(a.fecha)}</span>
+                  <span class="ep-badge" style="background:${bc};color:${tc};">${esc(a.tipo)}</span>
+                </span>
+                <span class="ep-resp">${esc(a.resp||'')}</span>
+                <span class="ep-prev">${esc(preview)}</span>
+              </span>
+          </label>`;
+        }).join('')}
+      </div>
+
+      <!-- FOOTER -->
+      <div style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:space-between;align-items:center;background:#f7f5f0;flex-shrink:0;">
+        <div style="font-size:11px;color:#aaa;">Marca los asientos y pulsa exportar</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="document.getElementById('export-panel-overlay').remove()" style="padding:8px 16px;border:1.5px solid #ddd;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;font-weight:500;color:#555;">Cancelar</button>
+          <button onclick="doExportWord()" style="padding:8px 20px;background:#c4611f;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;font-weight:700;display:flex;align-items:center;gap:6px;">
+            <span>📄</span> Exportar seleccionados
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function updateExportCount() {
+  const cbs = document.querySelectorAll('.ep-cb:checked');
+  const sel = cbs.length;
+  document.getElementById('ep-count-sel').textContent = sel;
+  document.getElementById('ep-count-pages').textContent = '~' + Math.max(1, Math.ceil(sel * 1.8));
+}
+
+function epSelectAll(val) {
+  document.querySelectorAll('.ep-cb').forEach(cb => {
+    const row = document.getElementById('ep-item-' + cb.dataset.id);
+    if (row && row.style.display !== 'none') cb.checked = val;
+  });
+  updateExportCount();
+}
+
+function applyExportFilters() {
+  const q = (document.getElementById('ep-search')?.value || '').toLowerCase();
+  const monthVal = document.getElementById('ep-month')?.value || '';
+  const desde = document.getElementById('ep-desde')?.value || '';
+  const hasta = document.getElementById('ep-hasta')?.value || '';
+
+  const sorted = [...asientos].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+  let visible = 0;
+  sorted.forEach(a => {
+    const el = document.getElementById('ep-item-' + a.id);
+    if (!el) return;
+    const fecha = a.fecha || '';
+    let show = true;
+    if (q) {
+      const num = el.dataset.num || '';
+      const resp = el.dataset.resp || '';
+      const fl = el.dataset.fechaLabel || '';
+      show = num.includes(q) || fl.includes(q) || resp.includes(q);
+    }
+    if (show && monthVal) { show = fecha.startsWith(monthVal); }
+    if (show && desde)    { show = fecha >= desde; }
+    if (show && hasta)    { show = fecha <= hasta; }
+    el.style.display = show ? 'flex' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('ep-count-total').textContent = visible;
+}
+
+function clearExportFilters() {
+  const m = document.getElementById('ep-month'); if (m) m.value = '';
+  const d = document.getElementById('ep-desde'); if (d) d.value = '';
+  const h = document.getElementById('ep-hasta'); if (h) h.value = '';
+  const s = document.getElementById('ep-search'); if (s) s.value = '';
+  applyExportFilters();
+}
+
+function filterExportPanel() { applyExportFilters(); }
+
+function doExportWord() {
+  const selectedIds = new Set([...document.querySelectorAll('.ep-cb:checked')].map(cb => cb.dataset.id));
+  if (!selectedIds.size) { toast('Selecciona al menos un asiento.', 'error'); return; }
+
+  const toExport = asientos.filter(a => selectedIds.has(a.id)).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+  document.getElementById('export-panel-overlay').remove();
+
+  generateRTF(toExport);
+}
+
+function generateRTF(lista) {
+  const OBRA = 'MEJORAMIENTO Y AMPLIACI\\u211?N DEL SERVICIO DE AGUA POTABLE URBANO Y SISTEMA DE ALCANTARILLADO EN APV RETAMALES, NUEVA ESPERANZA, LA COLINA Y VILLA REAL, DISTRITO DE SAYLLA DE LA PROVINCIA DE CUSCO DEL DEPARTAMENTO DE CUSCO.';
+
+  // Cabecera RTF — estilos con Heading 1 para navegación en panel lateral de Word
+  let rtf = '{\\rtf1\\ansi\\ansicpg1252\\deff0\r\n';
+  rtf += '{\\fonttbl{\\f0\\froman\\fcharset0 Times New Roman;}{\\f1\\fswiss\\fcharset0 Arial;}}\r\n';
+  // colortbl: 1=naranja, 2=azul oscuro, 3=gris, 4=verde, 5=rojo, 6=azul
+  rtf += '{\\colortbl ;\\red196\\green97\\blue31;\\red26\\green31\\blue46;\\red120\\green120\\blue120;\\red40\\green120\\blue80;\\red180\\green50\\blue40;\\red42\\green100\\blue150;}\r\n';
+  // Stylesheet: Heading 1 → aparece en el panel de navegación de Word
+  rtf += '{\\stylesheet\r\n';
+  rtf += '{\\s0\\snext0 Normal;}\r\n';
+  rtf += '{\\s1\\sb240\\sa120\\keepn\\f1\\fs24\\b\\cf1\\outlinelevel0\\sbasedon0\\snext0 heading 1;}\r\n';
+  rtf += '}\r\n';
+  rtf += '\\paperw12240\\paperh15840\\margl1440\\margr1440\\margt1440\\margb1440\r\n';
+  rtf += '\\widowctrl\\hyphauto\r\n\r\n';
+
+  // ENCABEZADO DEL DOCUMENTO — solo el nombre de la obra, sin "OFICINA DE..."
+  rtf += '{\\pard\\qj\\f1\\fs20\\b\\cf2 \\ldblquote ' + OBRA + '\\rdblquote\\par}\r\n';
+  rtf += '{\\pard\\f1\\fs12 \\par}\r\n\r\n';
+
+  lista.forEach((a, idx) => {
+    const p = a.personal || {};
+    const fechaStr = formatDate(a.fecha);
+
+    // ── TÍTULO DEL ASIENTO como Heading 1 ──
+    // Esto genera el título en el panel de navegación lateral de Word
+    const tituloAsiento = `ASIENTO N.\\u186? ${r(a.num)}  \\u8212?  ${r(fechaStr)}`;
+    rtf += `{\\pard\\s1\\keepn\\f1\\fs22\\b\\cf1 ${tituloAsiento}\\par}\r\n`;
+
+    // Línea de identificación y tipo
+    rtf += `{\\pard\\f1\\fs18\\cf6 Identificaci\\u243?n: ${r(a.resp||'')}  |  Tipo: ${r(a.tipo)}\\par}\r\n`;
+    rtf += '{\\pard\\f1\\fs10 \\par}\r\n';
+
+    // ── Determinar qué secciones tienen contenido real ──
+    // Personal: siempre se incluye (es obligatorio)
+    const tienePersonal = true;
+
+    // Almacén: tiene contenido si hay al menos un ingreso con descripción o una salida con descripción
+    const ingresosReales = (a.ingresos || []).filter(ing => ing.desc && ing.desc.trim() !== '');
+    const salidasReales  = (a.salidas  || []).filter(sal => sal.desc && sal.desc.trim() !== '');
+    const tieneAlmacen   = ingresosReales.length > 0 || salidasReales.length > 0;
+
+    // Equipo mecánico: tiene contenido si hay al menos un equipo con nombre
+    const equiposReales     = (a.equipos || []).filter(eq => eq.equipo && eq.equipo.trim() !== '');
+    const tieneEquipo       = equiposReales.length > 0;
+
+    // Actividades: tiene contenido si hay al menos una actividad no vacía
+    const actividadesReales = (a.actividades || []).filter(act => act && act.trim() !== '');
+    const tieneActividades  = actividadesReales.length > 0;
+
+    // Metrados: normalizar al nuevo formato {programadas,mayores,nuevas}
+    const _md = a.metrados;
+    const metGrupos = (!_md) ? {programadas:[],mayores:[],nuevas:[]}
+      : Array.isArray(_md) ? {programadas: _md, mayores:[], nuevas:[]}
+      : { programadas: _md.programadas||[], mayores: _md.mayores||[], nuevas: _md.nuevas||[] };
+    const _metFiltrar = arr => arr.filter(m => (m.itemDesc && m.itemDesc.trim()) || (m.item && m.item.trim()) || (m.desc && m.desc.trim()));
+    metGrupos.programadas = _metFiltrar(metGrupos.programadas);
+    metGrupos.mayores     = _metFiltrar(metGrupos.mayores);
+    metGrupos.nuevas      = _metFiltrar(metGrupos.nuevas);
+    const tieneMetrados   = metGrupos.programadas.length > 0 || metGrupos.mayores.length > 0 || metGrupos.nuevas.length > 0;
+
+    // Observaciones: tiene contenido si hay al menos una observación no vacía o texto al supervisor
+    const observacionesReales = (a.observaciones || []).filter(obs => obs && obs.trim() !== '');
+    const tieneObservaciones  = observacionesReales.length > 0 || (a.alSupervisor && a.alSupervisor.trim() !== '');
+
+    // Numeración dinámica: asignar número solo a las secciones presentes
+    let secNum = 0;
+    const numSec = () => { secNum++; return secNum; };
+
+    // ── 1. PERSONAL (siempre presente) ──
+    rtf += `{\\pard\\f1\\fs20\\b\\cf1 ${numSec()}. PERSONAL\\par}\r\n`;
+    const personalFields = [
+      { label: 'Residente de Obra',           val: p.residente   },
+      { label: 'Inspector de Obra',            val: p.inspector   },
+      { label: 'Asistente T\\u233?cnico de Inspector', val: p.asti        },
+      { label: 'Asistente T\\u233?cnico de Obra', val: p.ast     },
+      { label: 'Administrador de Obra',        val: p.aadm        },
+      { label: 'Almacenero',                   val: p.almacenero  },
+      { label: 'Responsable de SSOMA',         val: p.ssoma       },
+      { label: 'Capataz',                      val: p.capataz     },
+      { label: 'Guardi\\u225?n',               val: p.guardian    },
+      { label: 'Oficiales',                    val: p.oficiales   },
+      { label: 'Operarios',                    val: p.operarios   },
+      { label: 'Peones',                       val: p.peones      },
+      { label: 'Operador de Equipo',           val: p.opequipo    },
+    ];
+    personalFields.forEach(f => {
+      if ((f.val || 0) > 0) {
+        rtf += `{\\pard\\f1\\fs18\\cf2 ${f.label}: ${f.val}\\par}\r\n`;
+      }
+    });
+    rtf += `{\\pard\\f1\\fs18\\b\\cf4 TOTAL, PERSONAL DIARIO: ${p.total||0} personas\\par}\r\n`;
+    rtf += '{\\pard\\f1\\fs10 \\par}\r\n';
+
+    // ── ALMACÉN (solo si tiene movimientos reales) ──
+    if (tieneAlmacen) {
+      rtf += `{\\pard\\f1\\fs20\\b\\cf1 ${numSec()}. ALMAC\\u201?N\\par}\r\n`;
+      if (ingresosReales.length) {
+        rtf += '{\\pard\\f1\\fs18\\b\\cf4 Ingreso:\\par}\r\n';
+        ingresosReales.forEach(ing => {
+          rtf += `{\\pard\\li360\\f1\\fs18\\cf2 ${r(ing.desc)}   ${r(ing.unidad)}   Cant: ${ing.cant}\\par}\r\n`;
+        });
+      }
+      if (salidasReales.length) {
+        rtf += '{\\pard\\f1\\fs18\\b\\cf5 Salida:\\par}\r\n';
+        salidasReales.forEach(sal => {
+          rtf += `{\\pard\\li360\\f1\\fs18\\cf2 ${r(sal.desc)}   ${r(sal.unidad)}   Cant: ${sal.cant}\\par}\r\n`;
+        });
+      }
+      rtf += '{\\pard\\f1\\fs10 \\par}\r\n';
+    }
+
+    // ── EQUIPO MECÁNICO (solo si tiene equipos reales) ──
+    if (tieneEquipo) {
+      rtf += `{\\pard\\f1\\fs20\\b\\cf1 ${numSec()}. EQUIPO MEC\\u193?NICO\\par}\r\n`;
+      equiposReales.forEach(eq => {
+        let line = r(eq.equipo||'');
+        if (eq.hm && String(eq.hm).trim() !== '') line += `\\tab HM/HE: ${eq.hm}`;
+        if (eq.comb && String(eq.comb).trim() !== '') line += `\\tab Combustible: ${eq.comb} gal`;
+        if (eq.modalidad && eq.modalidad.trim()) line += `\\tab Modalidad: ${r(eq.modalidad)}`;
+        rtf += `{\\pard\\f1\\fs18\\cf2 ${line}\\par}\r\n`;
+      });
+      rtf += '{\\pard\\f1\\fs10 \\par}\r\n';
+    }
+
+    // ── ACTIVIDADES (solo si tiene actividades reales) ──
+    if (tieneActividades) {
+      rtf += `{\\pard\\f1\\fs20\\b\\cf1 ${numSec()}. ACTIVIDADES\\par}\r\n`;
+      actividadesReales.forEach((act, i) => {
+        rtf += `{\\pard\\f1\\fs18\\cf2 ${i+1}. ${r(act)}\\par}\r\n`;
+      });
+      // Metrados ejecutados — 3 grupos, solo se escribe si tiene contenido
+      if (tieneMetrados) {
+        rtf += '{\\pard\\f1\\fs10 \\par}\r\n';
+        rtf += '{\\pard\\f1\\fs18\\b\\cf6 Metrados Ejecutados:\\par}\r\n';
+        const _writeGrupoRTF = (rows, label) => {
+          if (!rows || !rows.length) return;
+          rtf += `{\\pard\\f1\\fs16\\b\\cf3 ${r(label)}\\par}\r\n`;
+          rows.forEach(m => {
+            const itemDesc = m.itemDesc || [m.item, m.desc].filter(Boolean).join('  ');
+            rtf += `{\\pard\\li360\\f1\\fs16\\cf2 ${r(itemDesc)}\\tab Metrado: ${m.metrado||''} ${r(m.unidad||'')}\\par}\r\n`;
+          });
+        };
+        _writeGrupoRTF(metGrupos.programadas, 'Partidas Programadas:');
+        _writeGrupoRTF(metGrupos.mayores,     'Mayores Metrados:');
+        _writeGrupoRTF(metGrupos.nuevas,      'Partidas Nuevas / Adicionales:');
+      }
+      rtf += '{\\pard\\f1\\fs10 \\par}\r\n';
+    }
+
+    // ── OBSERVACIONES (solo si tiene contenido real) ──
+    if (tieneObservaciones) {
+      rtf += `{\\pard\\f1\\fs20\\b\\cf1 ${numSec()}. OBSERVACIONES\\par}\r\n`;
+      observacionesReales.forEach(obs => {
+        rtf += `{\\pard\\f1\\fs18\\cf2 ${r(obs)}\\par}\r\n`;
+      });
+      if (a.alSupervisor && a.alSupervisor.trim() !== '') {
+        rtf += '{\\pard\\f1\\fs10 \\par}\r\n';
+        rtf += '{\\pard\\f1\\fs18\\b\\cf6 AL SUPERVISOR:\\par}\r\n';
+        rtf += `{\\pard\\f1\\fs18\\cf2 ${r(a.alSupervisor)}\\par}\r\n`;
+      }
+    }
+
+    // Salto de página entre asientos (excepto el último)
+    if (idx < lista.length - 1) {
+      rtf += '{\\pard\\f1\\fs10 \\par}\r\n{\\pard\\page\\par}\r\n';
+    }
+  });
+
+  // Pie de documento
+  rtf += '{\\pard\\f1\\fs10 \\par}\r\n';
+  rtf += '{\\pard\\brdrb\\brdrs\\brdrw5\\brdrcf3\\f1\\fs4 \\par}\r\n';
+  rtf += `{\\pard\\qr\\f1\\fs14\\cf3 Total de asientos exportados: ${lista.length}  |  Generado: ${new Date().toLocaleString('es-PE')}\\par}\r\n`;
+  rtf += '}';
+
+  // Convertir a bytes con encoding correcto (Windows-1252 para RTF)
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(rtf);
+  const blob = new Blob([bytes], { type: 'application/rtf;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `Cuaderno_Obra_Saylla_${new Date().toISOString().slice(0,10)}.rtf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  toast(`Documento exportado con ${lista.length} asientos.`, 'success');
+
+  // Actualizar contador en sidebar
+  updateExportedCount(lista.length);
+}
+
+function updateExportedCount(count) {
+  let el = document.getElementById('sb-exported');
+  if (el) {
+    el.textContent = count;
+    const pill = document.getElementById('sb-exported-pill');
+    if (pill) { pill.style.display = ''; }
+  }
+}
+
+// ════════════════════════════
+//  HELPERS
+// ════════════════════════════
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('es-PE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' }).toUpperCase();
+}
+
+function tipoBadge(tipo) {
+  const map = { 'Normal':'badge-green', 'Alerta':'badge-red', 'Informativo':'badge-blue', 'Orden':'badge-orange' };
+  return { cls: map[tipo] || 'badge-green' };
+}
+
+function esc(str) {
+  if (!str) return '';
+  return str.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = el.className.replace('show','').trim(); }, 3200);
+}
+
+// Bloque de precarga eliminado v2 — los datos viven en Google Sheets.
+
+
+// ════════════════════════════
+//  IMPORTAR / EXPORTAR JSON (backup / migración)
+// ════════════════════════════
+function exportarJSON() {
+  if (!asientos.length) { toast('No hay asientos para exportar.', 'error'); return; }
+  const backup = {
+    version: 2,
+    exportDate: new Date().toISOString(),
+    asientos: asientos
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'backup-cuaderno-obra-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  toast('✅ Backup descargado: ' + asientos.length + ' asientos.', 'success');
+}
+
+function importarJSON() {
+  const existing = document.getElementById('import-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'import-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+
+  overlay.innerHTML = `
+  <div style="background:#fff;border-radius:18px;padding:28px;max-width:500px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,0.35);font-family:'DM Sans',sans-serif;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'DM Serif Display',serif;font-size:20px;color:#c4611f;">📥 Importar Base de Datos</div>
+      <button onclick="document.getElementById('import-overlay').remove()" style="background:#f4f1eb;border:none;padding:6px 10px;border-radius:7px;cursor:pointer;font-size:14px;">✕</button>
+    </div>
+
+    <div style="background:#e8f4ff;border-radius:10px;padding:13px 15px;font-size:12px;color:#2a6496;line-height:1.8;margin-bottom:18px;">
+      💡 <strong>¿Cómo funciona?</strong><br>
+      Selecciona el archivo <strong>backup-cuaderno-obra-XXXX.json</strong> que exportaste del cuaderno anterior.
+      Los asientos se cargarán aquí y luego se subirán automáticamente a tu nuevo Google Sheets.<br><br>
+      <strong>Si no tienes el JSON:</strong> Haz clic en "Backup JSON" en el cuaderno antiguo primero para descargarlo.
+    </div>
+
+    <div style="border:2px dashed #ddd;border-radius:12px;padding:30px;text-align:center;margin-bottom:18px;cursor:pointer;transition:all 0.2s;"
+      onclick="document.getElementById('json-file-input').click()"
+      ondragover="event.preventDefault();this.style.borderColor='#c4611f';this.style.background='#fdf3e8';"
+      ondragleave="this.style.borderColor='#ddd';this.style.background='transparent';"
+      ondrop="event.preventDefault();this.style.borderColor='#ddd';this.style.background='transparent';procesarArchivoJSON(event.dataTransfer.files[0]);">
+      <div style="font-size:32px;margin-bottom:8px;">📂</div>
+      <div style="font-size:13px;font-weight:600;color:#555;">Haz clic aquí o arrastra tu archivo JSON</div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px;">backup-cuaderno-obra-YYYY-MM-DD.json</div>
+      <input type="file" id="json-file-input" accept=".json" style="display:none;" onchange="procesarArchivoJSON(this.files[0])" />
+    </div>
+
+    <div id="import-preview" style="display:none;"></div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="document.getElementById('import-overlay').remove()" style="padding:9px 18px;border:1.5px solid #ddd;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;">Cancelar</button>
+      <button id="import-confirm-btn" onclick="confirmarImportacion()" style="display:none;padding:9px 20px;background:#3a8c5c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;">✅ Confirmar importación</button>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+let _importData = null;
+
+function procesarArchivoJSON(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const raw = JSON.parse(e.target.result);
+      let lista = [];
+      // Soportar formato directo (array) o con wrapper {version, asientos}
+      if (Array.isArray(raw)) {
+        lista = raw;
+      } else if (raw.asientos && Array.isArray(raw.asientos)) {
+        lista = raw.asientos;
+      } else {
+        throw new Error('Formato de archivo no reconocido.');
+      }
+      if (!lista.length) throw new Error('El archivo no contiene asientos.');
+
+      _importData = lista;
+      const preview = document.getElementById('import-preview');
+      const fechas = lista.map(a => a.fecha).filter(Boolean).sort();
+      preview.style.display = 'block';
+      preview.innerHTML = `
+        <div style="background:#d8f0e4;border-radius:10px;padding:14px;margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:700;color:#2d7048;margin-bottom:6px;">✅ Archivo válido</div>
+          <div style="font-size:13px;color:#555;line-height:1.8;">
+            <strong>${lista.length}</strong> asientos encontrados<br>
+            Período: <strong>${fechas[0]||'?'}</strong> → <strong>${fechas[fechas.length-1]||'?'}</strong>
+          </div>
+        </div>
+        <div style="background:#fff3cd;border-radius:8px;padding:10px 13px;font-size:12px;color:#856404;margin-bottom:12px;">
+          ⚠️ <strong>Atención:</strong> Si hay asientos con el mismo número que los actuales, se combinarán (gana el más reciente).
+        </div>`;
+      document.getElementById('import-confirm-btn').style.display = 'inline-flex';
+    } catch(err) {
+      toast('Error al leer el archivo: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+async function confirmarImportacion() {
+  if (!_importData || !_importData.length) return;
+  const ahora = new Date().toISOString();
+  // Merge: los asientos importados se combinan con los locales por num
+  const byNum = new Map();
+  asientos.forEach(a => byNum.set(a.num, a));
+  _importData.forEach(a => {
+    if (byNum.has(a.num)) {
+      const existTs = new Date(byNum.get(a.num).updated||0).getTime();
+      const impTs   = new Date(a.updated||0).getTime();
+      if (impTs > existTs) byNum.set(a.num, a);
+    } else {
+      byNum.set(a.num, a);
+    }
+  });
+  asientos = Array.from(byNum.values()).sort((a, b) => {
+    const na = parseInt(a.num), nb = parseInt(b.num);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return (a.num||'').localeCompare(b.num||'');
+  });
+
+  // Guardar en localStorage siempre
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(asientos));
+  renderTable();
+  renderSidebar();
+  document.getElementById('import-overlay').remove();
+  _importData = null;
+
+  const tieneURL = APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
+  if (tieneURL) {
+    toast('✅ ' + asientos.length + ' asientos importados. Subiendo a Google Sheets...', 'success');
+    const ok = await syncToSheets();
+    if (ok) toast('✅ Datos subidos a Google Sheets exitosamente. Visibles en todas las PCs.', 'success');
+    else    toast('⚠️ Importado localmente pero falló la subida a Sheets. Intenta "Forzar subida".', 'error');
+  } else {
+    // Sin Sheets: avisar que están guardados localmente y pedir configurar URL
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+    if (dot) dot.className = 'status-dot dot-online';
+    if (txt) txt.innerHTML = `<strong>✅ ${asientos.length} asientos cargados localmente.</strong> Configura Google Sheets para sincronizar entre PCs.`;
+    toast('✅ ' + asientos.length + ' asientos importados y guardados localmente.', 'success');
+    // Marcar pendiente para que suba automáticamente cuando se configure Sheets
+    markPending();
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  DATOS: 100% desde Google Sheets — no hay precarga local
+// ════════════════════════════════════════════════════════════
+</script>
+</body>
+</html>
