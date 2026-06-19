@@ -305,6 +305,9 @@
         <svg width="14" height="14" viewBox="0 0 87.3 78" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28.95 51.5H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L28.45 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 46.5C.4 47.9 0 49.45 0 51.5h28.95z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L87.3 55c.8-1.4 1.2-2.95 1.2-4.5H59.55l6.2 11.9z" fill="#ea4335"/><path d="M43.65 25L58.85 0H29.55L14.35 25z" fill="#00832d"/><path d="M59.55 51.5H87.3L72.1 25H43.15z" fill="#2684fc"/><path d="M43.65 25l-15.2 26.5H59.55L43.65 25z" fill="#ffba00"/></svg>
         Conectar Drive
       </button>
+      <button class="btn btn-outline" onclick="showConexionGuia()" title="Abre siempre la guía paso a paso para conectar o reconectar Google Sheets, sin importar si ya hay una URL configurada">
+        📖 Guía de conexión
+      </button>
       <button class="btn btn-outline" onclick="importarJSON()" title="Importar base de datos desde archivo JSON exportado anteriormente">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Importar JSON
@@ -591,7 +594,7 @@ const FILE_NAME = 'cuaderno-obra-saylla.json';
 // ════════════════════════════
 // Pega aquí tu URL de Google Apps Script y ya no la cambies más.
 // Todos los datos (asientos, usuarios, contraseñas) vivirán en Google Sheets.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykDV_KWK9Yyf5L45vSI3cLqq03aXCHmUiiWT5qsjmLbP3fX0X3a1ByfnRtAONz-HhZ/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxba-CR78D31I0f0g6qL5tfH6Z7gz6wFchdQyWxgNUaENQLwa6kU94AN55xYnp-WwI/exec';
 
 let currentUser = null; // { username, role: 'admin'|'editor'|'viewer', displayName }
 // Usuarios cargados desde Sheets. Nunca se leen del HTML.
@@ -2208,17 +2211,19 @@ function toggleDrive() {
   }
 }
 
-function showConexionGuia() {
-  const existing = document.getElementById('guia-overlay');
-  if (existing) existing.remove();
-
-  const GAS_CODE = `function doGet(e) { return handleReq(e); }
+function buildGasCode(sheetId) {
+  const id = sheetId && sheetId.trim() ? sheetId.trim() : 'PEGA_AQUI_EL_ID_DE_TU_SHEET';
+  return `function doGet(e) { return handleReq(e); }
 function doPost(e) { return handleReq(e); }
+
+// ID de la Google Sheet donde se guardan los datos (siempre la misma, en cualquier PC).
+var SHEET_ID = '${id}';
+
 function handleReq(e) {
   var p = e.parameter, body = {};
   try { if(e.postData) body=JSON.parse(e.postData.contents); } catch(x){}
   var action = p.action || body.action;
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = SpreadsheetApp.openById(SHEET_ID);
   var shData  = ss.getSheetByName('Datos')   || ss.insertSheet('Datos');
   var shUsers = ss.getSheetByName('Usuarios') || ss.insertSheet('Usuarios');
   var out = {};
@@ -2238,6 +2243,13 @@ function handleReq(e) {
   return ContentService.createTextOutput(JSON.stringify(out))
     .setMimeType(ContentService.MimeType.JSON);
 }`;
+}
+
+function showConexionGuia() {
+  const existing = document.getElementById('guia-overlay');
+  if (existing) existing.remove();
+
+  const GAS_CODE = buildGasCode('');
 
   const overlay = document.createElement('div');
   overlay.id = 'guia-overlay';
@@ -2273,9 +2285,29 @@ function handleReq(e) {
         </div>
       </div>
 
-      <!-- Paso 2 -->
+      <!-- Paso 2: pegar el ID de la hoja -->
       <div style="display:flex;gap:14px;margin-bottom:20px;">
-        <div style="min-width:32px;height:32px;background:#34a853;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+        <div style="min-width:32px;height:32px;background:#9c27b0;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+        <div style="width:100%;">
+          <div style="font-weight:700;font-size:14px;color:#222;margin-bottom:4px;">Copiar el ID de tu hoja y pegarlo aquí</div>
+          <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:8px;">
+            Mira la URL de tu hoja recién creada. Tiene esta forma:
+          </div>
+          <div style="background:#1e1e2e;border-radius:10px;padding:14px;font-family:monospace;font-size:11px;line-height:1.8;word-break:break-all;margin-bottom:10px;">
+            <span style="color:#888;">https://docs.google.com/spreadsheets/d/</span><span style="background:#9c27b0;color:#fff;padding:2px 6px;border-radius:4px;font-weight:700;">1AbCdEfGhIjKlMnOpQrStUvWxYz</span><span style="color:#888;">/edit</span>
+          </div>
+          <div style="font-size:12px;color:#555;margin-bottom:8px;">
+            Copia solo la parte resaltada (entre <strong>/d/</strong> y <strong>/edit</strong>) y pégala aquí abajo — el código del Paso 4 se va a actualizar solo, automáticamente:
+          </div>
+          <input id="sheet-id-input" type="text" placeholder="Pega aquí el ID de tu Google Sheet"
+            oninput="actualizarCodigoGAS()"
+            style="width:100%;padding:10px 12px;border:2px solid #9c27b0;border-radius:8px;font-size:13px;font-family:monospace;outline:none;box-sizing:border-box;" />
+        </div>
+      </div>
+
+      <!-- Paso 3 -->
+      <div style="display:flex;gap:14px;margin-bottom:20px;">
+        <div style="min-width:32px;height:32px;background:#34a853;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
         <div>
           <div style="font-weight:700;font-size:14px;color:#222;margin-bottom:4px;">Abrir Apps Script</div>
           <div style="font-size:13px;color:#555;line-height:1.6;">
@@ -2287,12 +2319,12 @@ function handleReq(e) {
         </div>
       </div>
 
-      <!-- Paso 3 -->
+      <!-- Paso 4 -->
       <div style="display:flex;gap:14px;margin-bottom:20px;">
-        <div style="min-width:32px;height:32px;background:#fbbc04;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+        <div style="min-width:32px;height:32px;background:#fbbc04;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
         <div style="width:100%;">
           <div style="font-weight:700;font-size:14px;color:#222;margin-bottom:4px;">Pegar este código en Apps Script</div>
-          <div style="font-size:13px;color:#555;margin-bottom:8px;">Borra todo lo que hay y pega el siguiente código:</div>
+          <div style="font-size:13px;color:#555;margin-bottom:8px;" id="gas-code-hint">Borra todo lo que hay en el editor de Apps Script y pega el siguiente código completo (ya incluye el ID que pegaste arriba, no necesitas editar nada más):</div>
           <div style="position:relative;">
             <textarea id="gas-code-box" readonly
               style="width:100%;height:160px;background:#1e1e2e;color:#a8ff78;font-family:monospace;font-size:11px;border:none;border-radius:10px;padding:14px;resize:none;outline:none;line-height:1.6;box-sizing:border-box;">${GAS_CODE}</textarea>
@@ -2304,9 +2336,9 @@ function handleReq(e) {
         </div>
       </div>
 
-      <!-- Paso 4 -->
+      <!-- Paso 5 -->
       <div style="display:flex;gap:14px;margin-bottom:20px;">
-        <div style="min-width:32px;height:32px;background:#ea4335;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
+        <div style="min-width:32px;height:32px;background:#ea4335;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</div>
         <div>
           <div style="font-weight:700;font-size:14px;color:#222;margin-bottom:4px;">Publicar como aplicación web</div>
           <div style="font-size:13px;color:#555;line-height:1.8;">
@@ -2323,9 +2355,9 @@ function handleReq(e) {
         </div>
       </div>
 
-      <!-- Paso 5 -->
+      <!-- Paso 6 -->
       <div style="display:flex;gap:14px;margin-bottom:24px;">
-        <div style="min-width:32px;height:32px;background:#c4611f;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</div>
+        <div style="min-width:32px;height:32px;background:#c4611f;border-radius:50%;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">6</div>
         <div style="width:100%;">
           <div style="font-weight:700;font-size:14px;color:#222;margin-bottom:4px;">Copiar la URL y pegarla en el archivo HTML</div>
           <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px;">
@@ -2362,6 +2394,23 @@ function copiarCodigoGAS() {
     btn.textContent = '✅ Copiado';
     setTimeout(() => { btn.textContent = '📋 Copiar'; }, 2000);
   });
+}
+
+function actualizarCodigoGAS() {
+  const input = document.getElementById('sheet-id-input');
+  const box = document.getElementById('gas-code-box');
+  const hint = document.getElementById('gas-code-hint');
+  if (!input || !box) return;
+  const raw = input.value.trim();
+  // Si pegan la URL completa por error, extraemos solo el ID automáticamente.
+  const match = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  const id = match ? match[1] : raw;
+  box.value = buildGasCode(id);
+  if (hint) {
+    hint.innerHTML = id
+      ? 'Borra todo lo que hay en el editor de Apps Script y pega el siguiente código completo (ya incluye tu ID, no necesitas editar nada más):'
+      : 'Pega primero el ID de tu hoja arriba ⬆️ — el código se actualizará solo. Mientras tanto, aquí ves el código de ejemplo:';
+  }
 }
 
 // ── Alias no-op para compatibilidad ──
