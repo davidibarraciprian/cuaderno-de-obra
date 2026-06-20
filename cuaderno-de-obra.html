@@ -580,6 +580,9 @@
 //  STATE
 // ════════════════════════════
 let asientos = [];
+// Los asientos eliminados se quedan en el array (marcados con _deleted) para que la
+// eliminación se sincronice correctamente entre PCs — pero nunca deben verse en la UI.
+function visibleAsientos() { return asientos.filter(a => !a._deleted); }
 let driveConnected = false;
 let driveFileId = null;
 let currentModalId = null;
@@ -594,7 +597,7 @@ const FILE_NAME = 'cuaderno-obra-saylla.json';
 // ════════════════════════════
 // Pega aquí tu URL de Google Apps Script y ya no la cambies más.
 // Todos los datos (asientos, usuarios, contraseñas) vivirán en Google Sheets.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxba-CR78D31I0f0g6qL5tfH6Z7gz6wFchdQyWxgNUaENQLwa6kU94AN55xYnp-WwI/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyjdOb1YLkj3HsVB9UKE4o00Cz1RfSOnhcsU992AVVZ8lxLjmAAoHXvaPcTFDiKwSgg/exec';
 
 let currentUser = null; // { username, role: 'admin'|'editor'|'viewer', displayName }
 // Usuarios cargados desde Sheets. Nunca se leen del HTML.
@@ -968,8 +971,8 @@ window.addEventListener('offline', () => {
   if (txt) txt.innerHTML = '<strong>Sin internet</strong> — Los cambios se guardan localmente y se subirán al reconectarse.';
 });
 
-// syncToSheets: sube TODOS los asientos a Sheets. Retorna true si tuvo éxito.
-async function syncToSheets() {
+// syncToSheets: sube los asientos a Sheets (el servidor hace el merge final). Retorna true si tuvo éxito.
+async function syncToSheets(force) {
   if (!APPS_SCRIPT_URL) return false;
   try {
     const dot = document.getElementById('status-dot');
@@ -978,7 +981,7 @@ async function syncToSheets() {
     if (txt) txt.innerHTML = '<strong>Sincronizando...</strong> Subiendo datos a Google Sheets.';
     const resp = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'write', data: asientos }),
+      body: JSON.stringify({ action: 'write', data: asientos, force: !!force }),
       headers: { 'Content-Type': 'text/plain' }
     });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -994,6 +997,19 @@ async function syncToSheets() {
     }
     if (!json || json.ok === false) {
       throw new Error((json && (json.error || json.message)) || 'El servidor reportó un fallo al guardar (ok:false)');
+    }
+
+    // El servidor hace el merge definitivo (con bloqueo) y devuelve la lista resultante.
+    // Adoptamos esa versión como la verdad para que esta PC nunca quede desfasada.
+    if (Array.isArray(json.data)) {
+      asientos = json.data.slice().sort((a, b) => {
+        const na = parseInt(a.num), nb = parseInt(b.num);
+        if (!isNaN(na) && !isNaN(nb)) return na - nb;
+        return (a.num||'').localeCompare(b.num||'');
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(asientos));
+      renderTable();
+      renderSidebar();
     }
 
     if (dot) dot.className = 'status-dot dot-online';
@@ -1341,7 +1357,8 @@ async function syncNow() {
   else     { markPending(); toast('⚠️ No se pudo sincronizar. Revisa tu conexión.', 'error'); }
 }
 
-// RESCATE: fuerza subida de TODOS los asientos locales a Sheets
+// RESCATE: fuerza subida de TODOS los asientos locales a Sheets, sin comparar fechas
+// (úsalo si una PC tiene asientos que no aparecen en las demás).
 async function forceUploadAll() {
   if (!navigator.onLine) { toast('⚠️ Sin conexión.', 'error'); return; }
   if (!confirm('¿Forzar subida de TODOS los asientos de esta PC a Google Sheets?\n\nEsto solucionará el problema de asientos que no aparecen en otras PCs.')) return;
@@ -1350,20 +1367,12 @@ async function forceUploadAll() {
   if (dot) dot.className = 'status-dot dot-syncing';
   if (txt) txt.innerHTML = '<strong>Subiendo todos los datos...</strong> No cierres esta ventana.';
   toast('⬆️ Forzando subida de ' + asientos.length + ' asiento(s)...', 'success');
-  try {
-    const resp = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'write', data: asientos }),
-      headers: { 'Content-Type': 'text/plain' }
-    });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const ok = await syncToSheets(true);
+  if (ok) {
     clearPending();
-    if (dot) dot.className = 'status-dot dot-online';
-    if (txt) txt.innerHTML = '<strong>Google Sheets conectado</strong> — Todos los usuarios ven los mismos datos.';
     toast('✅ ¡Subida exitosa! ' + asientos.length + ' asiento(s) disponibles en todas las PCs.', 'success');
-  } catch(e) {
-    if (dot) dot.className = 'status-dot dot-offline';
-    toast('❌ Error: ' + e.message + '. Verifica tu conexión e inténtalo de nuevo.', 'error');
+  } else {
+    toast('❌ No se pudo forzar la subida. Verifica tu conexión e inténtalo de nuevo.', 'error');
   }
 }
 
@@ -1692,7 +1701,7 @@ function toggleSidebar() { document.body.classList.toggle('sidebar-collapsed'); 
 
 function populateMonthFilters() {
   // Build sorted unique YYYY-MM list from asientos
-  const months = [...new Set(asientos.map(a => a.fecha ? a.fecha.slice(0,7) : ''))].filter(Boolean).sort().reverse();
+  const months = [...new Set(visibleAsientos().map(a => a.fecha ? a.fecha.slice(0,7) : ''))].filter(Boolean).sort().reverse();
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const toLabel = ym => { const [y,m] = ym.split('-'); return MESES[parseInt(m,10)-1] + ' ' + y; };
 
@@ -1718,16 +1727,17 @@ function renderSidebar(filter = '') {
   const list = document.getElementById('sb-list');
   const q = filter.toLowerCase();
   const monthFilter = document.getElementById('sb-month') ? document.getElementById('sb-month').value : '';
-  const filtered = asientos.filter(a => {
+  const visible = visibleAsientos();
+  const filtered = visible.filter(a => {
     const matchQ = !q || a.num.toLowerCase().includes(q) || (a.desc||'').toLowerCase().includes(q) || (a.resp||'').toLowerCase().includes(q);
     const matchM = !monthFilter || (a.fecha && a.fecha.startsWith(monthFilter));
     return matchQ && matchM;
   });
-  document.getElementById('sb-total').textContent = asientos.length;
+  document.getElementById('sb-total').textContent = visible.length;
   const now = new Date();
   const weekAgo = new Date(now - 7*24*60*60*1000);
-  document.getElementById('sb-week').textContent = asientos.filter(a => new Date(a.fecha) >= weekAgo).length;
-  document.getElementById('sb-alertas').textContent = asientos.filter(a => a.tipo === 'Alerta').length;
+  document.getElementById('sb-week').textContent = visible.filter(a => new Date(a.fecha) >= weekAgo).length;
+  document.getElementById('sb-alertas').textContent = visible.filter(a => a.tipo === 'Alerta').length;
 
   if (!filtered.length) { list.innerHTML = '<div class="sidebar-empty">Sin asientos' + (q ? ' encontrados' : ' registrados') + '</div>'; return; }
   const sorted = [...filtered].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
@@ -1790,7 +1800,7 @@ function saveAsiento() {
     persist();
     clearForm();
   } else {
-    if (asientos.find(a => a.num === num)) {
+    if (asientos.find(a => a.num === num && !a._deleted)) {
       if (!confirm(`Ya existe el asiento N° "${num}". ¿Deseas guardarlo de todas formas?`)) return;
     }
     asientos.push({ ...record, created: new Date().toISOString() });
@@ -1908,8 +1918,9 @@ function addEquipoRowWithModalidad(modalidad) {
 //  COPIAR ÚLTIMO ASIENTO
 // ════════════════════════════
 function copyLastAsiento() {
-  if (!asientos.length) { toast('No hay asientos guardados para copiar.', 'error'); return; }
-  const sorted = [...asientos].sort((a, b) => {
+  const visible = visibleAsientos();
+  if (!visible.length) { toast('No hay asientos guardados para copiar.', 'error'); return; }
+  const sorted = [...visible].sort((a, b) => {
     const dateCompare = new Date(b.fecha) - new Date(a.fecha);
     if (dateCompare !== 0) return dateCompare;
     const na = parseInt(b.num) || 0, nb = parseInt(a.num) || 0;
@@ -2013,7 +2024,12 @@ function editAsiento(id) {
 function deleteAsiento(id) {
   if (currentUser && currentUser.role === 'viewer') { toast('No tienes permisos para eliminar asientos.', 'error'); return; }
   if (!confirm('¿Eliminar este asiento? Esta acción no se puede deshacer.')) return;
-  asientos = asientos.filter(a => a.id !== id);
+  const idx = asientos.findIndex(a => a.id === id);
+  if (idx === -1) return;
+  // No lo quitamos del array: lo marcamos como eliminado (con fecha nueva) para que
+  // la eliminación misma viaje a Sheets y a las demás PCs vía la sincronización normal.
+  // Si solo lo quitáramos del array local, al sincronizar volvería a aparecer (resucitado).
+  asientos[idx] = { ...asientos[idx], _deleted: true, updated: new Date().toISOString() };
   persist();
   renderTable();
   renderSidebar();
@@ -2056,7 +2072,8 @@ function renderTable() {
   const q = document.getElementById('tbl-search').value.toLowerCase();
   const tipo = document.getElementById('tbl-filter').value;
   const monthFilter = document.getElementById('tbl-month') ? document.getElementById('tbl-month').value : '';
-  let filtered = asientos.filter(a => {
+  const visible = visibleAsientos();
+  let filtered = visible.filter(a => {
     const matchQ = !q || a.num.toLowerCase().includes(q) || (a.desc||'').toLowerCase().includes(q) || (a.resp||'').toLowerCase().includes(q);
     const matchT = !tipo || a.tipo === tipo;
     const matchM = !monthFilter || (a.fecha && a.fecha.startsWith(monthFilter));
@@ -2065,7 +2082,7 @@ function renderTable() {
   filtered.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
   const tbody = document.getElementById('tbl-body');
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📖</div><p>${asientos.length ? 'No se encontraron asientos con ese filtro.' : 'No hay asientos registrados aún.'}</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📖</div><p>${visible.length ? 'No se encontraron asientos con ese filtro.' : 'No hay asientos registrados aún.'}</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = filtered.map(a => {
@@ -2221,27 +2238,130 @@ var SHEET_ID = '${id}';
 
 function handleReq(e) {
   var p = e.parameter, body = {};
-  try { if(e.postData) body=JSON.parse(e.postData.contents); } catch(x){}
+  try { if (e.postData) body = JSON.parse(e.postData.contents); } catch (x) {}
   var action = p.action || body.action;
   var ss = SpreadsheetApp.openById(SHEET_ID);
-  var shData  = ss.getSheetByName('Datos')   || ss.insertSheet('Datos');
-  var shUsers = ss.getSheetByName('Usuarios') || ss.insertSheet('Usuarios');
   var out = {};
-  if(action==='read') {
-    var v = shData.getRange(1,1).getValue();
-    out = { ok:true, data: v ? JSON.parse(v) : [] };
-  } else if(action==='write') {
-    shData.getRange(1,1).setValue(JSON.stringify(body.data));
-    out = { ok:true };
-  } else if(action==='readUsers') {
-    var u = shUsers.getRange(1,1).getValue();
-    out = { ok:true, data: u ? JSON.parse(u) : {} };
-  } else if(action==='writeUsers') {
-    shUsers.getRange(1,1).setValue(JSON.stringify(body.data));
-    out = { ok:true };
+
+  try {
+    if (action === 'read') {
+      out = { ok: true, data: readAsientos(ss) };
+    } else if (action === 'write') {
+      var lock = LockService.getScriptLock();
+      lock.waitLock(30000);
+      try {
+        var merged;
+        if (body.force) {
+          merged = (body.data || []).slice();
+        } else {
+          merged = mergeAsientos(readAsientos(ss), body.data || []);
+        }
+        writeAsientos(ss, merged);
+        out = { ok: true, data: merged };
+      } finally {
+        lock.releaseLock();
+      }
+    } else if (action === 'readUsers') {
+      out = { ok: true, data: readUsers(ss) };
+    } else if (action === 'writeUsers') {
+      var lock2 = LockService.getScriptLock();
+      lock2.waitLock(30000);
+      try {
+        writeUsers(ss, body.data || {});
+        out = { ok: true };
+      } finally {
+        lock2.releaseLock();
+      }
+    } else {
+      out = { ok: false, error: 'Accion no reconocida: ' + action };
+    }
+  } catch (err) {
+    out = { ok: false, error: String(err) };
   }
+
   return ContentService.createTextOutput(JSON.stringify(out))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getSheet_(ss, name) {
+  var sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
+  return sh;
+}
+
+// Lee asientos guardados UNO POR FILA (sin limite de 50,000 caracteres por celda).
+// Si detecta el formato viejo (todo el cuaderno en una sola celda), lo migra solo, una vez.
+function readAsientos(ss) {
+  var sh = getSheet_(ss, 'Datos');
+  var lastRow = sh.getLastRow();
+
+  if (lastRow >= 1) {
+    var a1 = sh.getRange(1, 1).getValue();
+    if (a1 && typeof a1 === 'string' && a1.trim().charAt(0) === '[') {
+      try {
+        var old = JSON.parse(a1);
+        if (Array.isArray(old)) {
+          writeAsientos(ss, old);
+          lastRow = sh.getLastRow();
+        }
+      } catch (e) {}
+    }
+  }
+
+  if (lastRow < 2) return [];
+  var values = sh.getRange(2, 1, lastRow - 1, 4).getValues();
+  var out = [];
+  for (var i = 0; i < values.length; i++) {
+    var json = values[i][3];
+    if (!json) continue;
+    try { out.push(JSON.parse(json)); } catch (e) {}
+  }
+  return out;
+}
+
+function writeAsientos(ss, asientos) {
+  var sh = getSheet_(ss, 'Datos');
+  sh.clearContents();
+  sh.getRange(1, 1, 1, 4).setValues([['num', 'id', 'updated', 'json']]);
+  if (!asientos.length) return;
+  asientos.sort(function (a, b) {
+    var na = parseInt(a.num), nb = parseInt(b.num);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return String(a.num || '').localeCompare(String(b.num || ''));
+  });
+  var rows = asientos.map(function (a) {
+    return [a.num || '', a.id || '', a.updated || '', JSON.stringify(a)];
+  });
+  sh.getRange(2, 1, rows.length, 4).setValues(rows);
+}
+
+// Combina lo que hay en el servidor con lo que llega del cliente.
+// Clave de negocio = "num" (numero de asiento). Gana el mas reciente; empate gana el que llega.
+function mergeAsientos(serverList, incomingList) {
+  var byNum = {};
+  serverList.forEach(function (a) { byNum[a.num] = a; });
+  incomingList.forEach(function (a) {
+    var existing = byNum[a.num];
+    if (!existing) { byNum[a.num] = a; return; }
+    var tExisting = new Date(existing.updated || 0).getTime();
+    var tIncoming = new Date(a.updated || 0).getTime();
+    if (tIncoming >= tExisting) byNum[a.num] = a;
+  });
+  var merged = [];
+  for (var k in byNum) merged.push(byNum[k]);
+  return merged;
+}
+
+function readUsers(ss) {
+  var sh = getSheet_(ss, 'Usuarios');
+  var v = sh.getRange(1, 1).getValue();
+  if (!v) return {};
+  try { return JSON.parse(v); } catch (e) { return {}; }
+}
+
+function writeUsers(ss, users) {
+  var sh = getSheet_(ss, 'Usuarios');
+  sh.getRange(1, 1).setValue(JSON.stringify(users));
 }`;
 }
 
@@ -2451,12 +2571,12 @@ function exportWord() {
 }
 
 function showExportPanel() {
-  const sorted = [...asientos].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+  const sorted = visibleAsientos().sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
   const existing = document.getElementById('export-panel-overlay');
   if (existing) existing.remove();
 
   // Build months for filter
-  const months = [...new Set(asientos.map(a => a.fecha ? a.fecha.slice(0,7) : ''))].filter(Boolean).sort().reverse();
+  const months = [...new Set(sorted.map(a => a.fecha ? a.fecha.slice(0,7) : ''))].filter(Boolean).sort().reverse();
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const toLabel = ym => { const [y,m] = ym.split('-'); return MESES[parseInt(m,10)-1] + ' ' + y; };
   const monthOpts = months.map(ym => `<option value="${ym}">${toLabel(ym)}</option>`).join('');
@@ -2643,7 +2763,7 @@ function doExportWord() {
   const selectedIds = new Set([...document.querySelectorAll('.ep-cb:checked')].map(cb => cb.dataset.id));
   if (!selectedIds.size) { toast('Selecciona al menos un asiento.', 'error'); return; }
 
-  const toExport = asientos.filter(a => selectedIds.has(a.id)).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+  const toExport = asientos.filter(a => selectedIds.has(a.id) && !a._deleted).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
   document.getElementById('export-panel-overlay').remove();
 
   generateRTF(toExport);
